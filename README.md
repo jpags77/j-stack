@@ -102,7 +102,7 @@ The output isn't just research — it becomes the "what else did you consider" s
 
 | Skill | What it does |
 |-------|-------------|
-| `session-start` | Session orientation ritual. Run at the start of every session — reads wiki state, confirms fidelity target, surfaces scope changes, handles iteration bumps, and declares the session goal before any work begins. Prevents silent drift between sessions. |
+| `build-mode` | Session orientation ritual. Run at the start of every session — reads wiki state, confirms fidelity target, surfaces scope changes, handles iteration bumps, and declares the session goal before any work begins. Prevents silent drift between sessions. |
 | `poc-wiki-init` | Bootstraps the `.planning/` wiki at project start. Asks the fidelity target question upfront, generates schema files for Claude Code, Codex, Cursor, and ChatGPT. Idempotent — safe to run again. |
 | `handoff-snapshot` | Writes a timestamped blackboard snapshot to `.planning/handoffs/` with typed state, claims, provenance, conflicts, decisions, next steps, touched artifacts, and a paste-ready continuation prompt for the next tool. |
 | `second-opinion` | Dispatches an artifact to Codex CLI for independent review, then synthesizes a convergence/divergence matrix. Two AI vendors reviewing the same artifact independently. |
@@ -135,7 +135,7 @@ When Anthropic limits hit mid-engagement — and they will — `handoff-snapshot
 
 After significant code interactions, j-stack also treats commit + wiki update + handoff as the durable checkpoint. Local commits are appropriate once the diff is coherent; GitHub pushes are intentionally explicit and should happen only when the user asks or when a publish workflow is active.
 
-**Headroom** is the third defense — context compression at named pipeline checkpoints. Large tool outputs (wiki reads at session-start, prior-art scout returns, BUILD subagent transcripts, large file reads) are compressed before reasoning over them. The compressed form stays in context; the original is retrievable by hash if a specific detail is needed. Zero change to the workflow, measurable reduction in tokens-per-session.
+**Headroom** is the third defense — context compression at named pipeline checkpoints. Large tool outputs (wiki reads at build-mode, prior-art scout returns, BUILD subagent transcripts, large file reads) are compressed before reasoning over them. The compressed form stays in context; the original is retrievable by hash if a specific detail is needed. Zero change to the workflow, measurable reduction in tokens-per-session.
 
 ---
 
@@ -160,10 +160,10 @@ EXPAND → REFINE → SURVEY → PLAN → BUILD → POLISH → DEFEND → HANDOF
 
 ### Complete skill flow
 
-Every session enters through `session-start`, which reads wiki state and dispatches to the correct phase automatically.
+Every session enters through `build-mode`, which reads wiki state and dispatches to the correct phase automatically.
 
 ```
-session-start  [custom · sonnet]  ← fires automatically at session start (hook)
+build-mode  [custom · sonnet]  ← fires automatically when .planning/ exists (hook)
 │
 ├── if no .planning/ wiki → poc-wiki-init  [custom · haiku]
 │     ├── asks fidelity target (working PoC / polished demo / MVP)
@@ -199,7 +199,7 @@ BUILD
   /design-shotgun  [gstack · sonnet]  ← UI: explore directions
   /design-html     [gstack · sonnet]  ← UI: execute direction
 
-POLISH  (session-start checks log.md and dispatches to first pending)
+POLISH  (build-mode checks log.md and dispatches to first pending)
   /qa             [gstack · sonnet]
   /design-review  [gstack · sonnet]
   /cso            [gstack · opus]
@@ -284,7 +284,7 @@ bash install.sh --skip-codex    # skip Codex CLI check (if not using second-opin
 bash install.sh --skip-verify   # skip post-install verification
 ```
 
-The default script clones gstack, copies 11 cherry-picked skills into `~/.claude/skills/` with model directives injected, installs the 5 custom skills plus the bundled `prior-art-survey` (all from `skills/` files in this repo), installs the three scout agents into `~/.claude/agents/` (pinned to `model: sonnet`, honored by the Agent tool at dispatch), writes the project `CLAUDE.md` and `AGENTS.md` lane configuration, and merges a `SessionStart` hook into `~/.claude/settings.json` so `session-start` fires automatically (see [Manual hook setup](#manual-hook-setup) if you don't have `python3`).
+The default script clones gstack, copies 11 cherry-picked skills into `~/.claude/skills/` with model directives injected, installs the 5 custom skills plus the bundled `prior-art-survey` (all from `skills/` files in this repo), installs the three scout agents into `~/.claude/agents/` (pinned to `model: sonnet`, honored by the Agent tool at dispatch), writes the project `CLAUDE.md` and `AGENTS.md` lane configuration, and merges a `SessionStart` hook into `~/.claude/settings.json` so `build-mode` fires automatically (see [Manual hook setup](#manual-hook-setup) if you don't have `python3`).
 
 `--codex-only` skips Claude CLI/plugin/skill/agent/hook installation. It checks for the Codex CLI, writes the project `AGENTS.md` runtime mapping, and verifies the Codex surface. Use it when the repo should be workable from Codex without installing the Claude skill host on that machine.
 
@@ -300,7 +300,7 @@ The default script clones gstack, copies 11 cherry-picked skills into `~/.claude
         "hooks": [
           {
             "type": "command",
-            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"MANDATORY j-stack: Invoke the session-start skill immediately before any development work (coding, planning, design, or file changes). Skip only for pure Q&A that produces no artifacts. Do not wait for user instruction — run it now.\"}}'",
+            "command": "~/.claude/hooks/build-mode-gate.sh",
             "statusMessage": "Loading j-stack session context..."
           }
         ]
@@ -310,7 +310,7 @@ The default script clones gstack, copies 11 cherry-picked skills into `~/.claude
 }
 ```
 
-Without the hook, j-stack still works — the global `~/.claude/CLAUDE.md` instructs Claude to run `session-start` at the top of every session — but the hook makes it deterministic rather than relying on the model honoring the instruction.
+Without the hook, j-stack still works — run `/build-mode` yourself — but the hook makes it deterministic rather than relying on the model honoring an instruction. The script stays silent unless the project has a `.planning/` wiki, so non-engagement sessions pay no context cost.
 
 ### GitHub integration
 
@@ -353,12 +353,12 @@ Then start Codex in the repo. There is no Claude-style `SessionStart` hook for C
 
 ### Starting a new PoC or improving an existing repo
 
-`session-start` fires automatically at session start (via the `SessionStart` hook `install.sh` merges into `~/.claude/settings.json` — see [Manual hook setup](#manual-hook-setup) for the no-`python3` fallback). You don't run it manually.
+`build-mode` fires automatically at session start (via the `SessionStart` hook `install.sh` merges into `~/.claude/settings.json` — see [Manual hook setup](#manual-hook-setup) for the no-`python3` fallback). You don't run it manually.
 
 **First session on a new project:**
 ```
 1. Open Claude Code in your project directory
-2. session-start fires automatically
+2. build-mode fires automatically
    ├── bootstraps .planning/ wiki (asks fidelity target)
    └── dispatches to /office-hours to begin EXPAND
 3. Pipeline runs phase by phase from there
@@ -367,7 +367,7 @@ Then start Codex in the repo. There is no Claude-style `SessionStart` hook for C
 **First session on an existing repo:**
 ```
 1. Open Claude Code in the repo
-2. session-start fires automatically
+2. build-mode fires automatically
    ├── bootstraps .planning/ wiki
    ├── asks: goal, constraints, definition of done, prior docs
    └── dispatches to the right phase based on your answers
@@ -376,7 +376,7 @@ Then start Codex in the repo. There is no Claude-style `SessionStart` hook for C
 
 **Every subsequent session:**
 ```
-1. session-start fires automatically
+1. build-mode fires automatically
    ├── reads wiki: iteration / phase / fidelity / open items
    ├── confirms scope: "anything changed since last session?"
    ├── confirms fidelity target

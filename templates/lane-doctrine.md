@@ -15,7 +15,7 @@ Run them in order. Do NOT use gstack's /autoplan or /plan-eng-review — they ov
 
 **Prior-art gate (SURVEY before PLAN):** Before invoking `superpowers:writing-plans`, `.planning/index.md` must show `Prior-art: ✅ complete`. If it is `⬜ pending` or missing, run `prior-art-survey` first — it sets the flag once the survey runs and you make a build/adopt/fork/hybrid decision. This matters because `superpowers:brainstorming` hands off directly to planning by default; this gate is what inserts SURVEY between them so prior-art is never silently skipped.
 
-**POLISH report filing (enables auto-detection).** `/qa`, `/cso`, and `/design-review` don't write to the wiki on their own. After running one in this project, save its report to `.planning/reviews/` with a distinguishable name — `/qa` → `qa-<date>.md`, `/cso` → `security-<date>.md`, `/design-review` → `design-<date>.md` — append a line to `.planning/log.md`, and tick that step in the `## Iteration Progress` block of `index.md`. This lets `session-start` confirm POLISH progress without asking, and feeds `stakeholder-pack` (which expects `security-*` / `design-*`).
+**POLISH report filing (enables auto-detection).** `/qa`, `/cso`, and `/design-review` don't write to the wiki on their own. After running one in this project, save its report to `.planning/reviews/` with a distinguishable name — `/qa` → `qa-<date>.md`, `/cso` → `security-<date>.md`, `/design-review` → `design-<date>.md` — append a line to `.planning/log.md`, and tick that step in the `## Iteration Progress` block of `index.md`. This lets `build-mode` confirm POLISH progress without asking, and feeds `stakeholder-pack` (which expects `security-*` / `design-*`).
 
 ## Wiki
 

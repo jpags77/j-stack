@@ -21,21 +21,21 @@ assert_not_contains() {
 }
 
 # ── Skill files must exist ───────────────────────────────────────────────────
-for skill in poc-wiki-init handoff-snapshot second-opinion stakeholder-pack session-start prior-art-survey; do
+for skill in poc-wiki-init handoff-snapshot second-opinion stakeholder-pack build-mode prior-art-survey; do
   assert_file "${ROOT}/skills/${skill}/SKILL.md"
   echo "  ✓ skills/${skill}/SKILL.md"
 done
 
 # ── Skill files must have frontmatter ───────────────────────────────────────
-for skill in poc-wiki-init handoff-snapshot second-opinion stakeholder-pack session-start; do
+for skill in poc-wiki-init handoff-snapshot second-opinion stakeholder-pack build-mode; do
   assert_contains "${ROOT}/skills/${skill}/SKILL.md" "name: ${skill}"
   echo "  ✓ skills/${skill}/SKILL.md has name: frontmatter"
 done
 
-# ── session-start must have Iteration Progress reconciliation (live version) ─
-assert_contains "${ROOT}/skills/session-start/SKILL.md" "Iteration Progress"
-assert_contains "${ROOT}/skills/session-start/SKILL.md" "[auto]"
-echo "  ✓ skills/session-start/SKILL.md is current version (has Iteration Progress)"
+# ── build-mode must have Iteration Progress reconciliation (live version) ─
+assert_contains "${ROOT}/skills/build-mode/SKILL.md" "Iteration Progress"
+assert_contains "${ROOT}/skills/build-mode/SKILL.md" "[auto]"
+echo "  ✓ skills/build-mode/SKILL.md is current version (has Iteration Progress)"
 
 # ── install.sh must NOT contain embedded skill heredocs ─────────────────────
 assert_not_contains "${ROOT}/install.sh" "install_skill \"poc-wiki-init\""

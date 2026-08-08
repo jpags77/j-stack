@@ -174,7 +174,7 @@ done
 # ─── Phase 2: Custom skills ────────────────────────────────────────────────────────────────────────────
 
 info "Phase 2 — Installing custom skills…"
-CUSTOM_SKILLS=(poc-wiki-init handoff-snapshot second-opinion stakeholder-pack session-start)
+CUSTOM_SKILLS=(poc-wiki-init handoff-snapshot second-opinion stakeholder-pack build-mode)
 
 for skill in "${CUSTOM_SKILLS[@]}"; do
   src="${SCRIPT_DIR}/skills/${skill}"
@@ -274,24 +274,25 @@ if [ "$CODEX_ONLY" = false ]; then
 
 info "Phase 3.6 — Installing SessionStart hook…"
 
+# The hook is a gating script: it stays silent unless the project has a .planning/
+# wiki, so Q&A and one-off sessions pay no context cost.
+mkdir -p "${HOME}/.claude/hooks"
+cp "${SCRIPT_DIR}/hooks/build-mode-gate.sh" "${HOME}/.claude/hooks/build-mode-gate.sh"
+chmod +x "${HOME}/.claude/hooks/build-mode-gate.sh"
+info "  ✓ hooks/build-mode-gate.sh"
+
 SETTINGS_JSON="${HOME}/.claude/settings.json"
-HOOK_MARKER="MANDATORY j-stack"
+HOOK_MARKER="build-mode-gate.sh"
 
 write_session_hook() {
   python3 - "$SETTINGS_JSON" <<'PYEOF'
 import json, os, sys
 
 path = sys.argv[1]
-marker = "MANDATORY j-stack"
-command = (
-    "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\","
-    "\"additionalContext\":\"MANDATORY j-stack: Invoke the session-start skill "
-    "immediately before any development work (coding, planning, design, or file "
-    "changes). Skip only for pure Q&A that produces no artifacts. Do not wait for "
-    "user instruction — run it now.\"}}'"
-)
+marker = "build-mode-gate.sh"
+command = os.path.expanduser("~/.claude/hooks/build-mode-gate.sh")
 entry = {"hooks": [{"type": "command", "command": command,
-                    "statusMessage": "Loading j-stack session context..."}]}
+                    "statusMessage": "Checking for j-stack engagement..."}]}
 
 data = {}
 if os.path.exists(path):
@@ -351,7 +352,7 @@ if [ "$SKIP_VERIFY" = false ]; then
 
   if [ "$CODEX_ONLY" = false ]; then
     # Check all skills exist
-    ALL_SKILLS=("${GSTACK_SKILLS[@]}" poc-wiki-init handoff-snapshot second-opinion stakeholder-pack session-start prior-art-survey)
+    ALL_SKILLS=("${GSTACK_SKILLS[@]}" poc-wiki-init handoff-snapshot second-opinion stakeholder-pack build-mode prior-art-survey)
     for skill in "${ALL_SKILLS[@]}"; do
       if [ -d "${SKILLS_DIR}/${skill}" ]; then
         info "  ✓ ${skill}"
@@ -408,12 +409,12 @@ if [ "$CODEX_ONLY" = true ]; then
   echo "  4. Keep .planning/ and local commits as the durable handoff surface"
 else
   echo "  1. Open a new Claude Code session in your project directory"
-  echo "  2. session-start fires automatically (SessionStart hook) — it orients,"
-  echo "     or bootstraps the .planning/ wiki on first run for this project"
+  echo "  2. build-mode fires automatically (SessionStart hook) for projects that"
+  echo "     already have .planning/; run /build-mode by hand to start a new one"
   echo "  3. It dispatches to /office-hours to begin EXPAND (founder-lens scoping)"
-  echo "  4. Follow the pipeline in ~/.claude/CLAUDE.md"
+  echo "  4. Follow the pipeline in the build-mode skill"
 fi
 echo ""
-echo "Each session: session-start → confirm fidelity → confirm phase → do work → handoff-snapshot (if switching tools)"
+echo "Each session: build-mode → confirm fidelity → confirm phase → do work → handoff-snapshot (if switching tools)"
 echo "Pipeline:     EXPAND → REFINE → SURVEY → PLAN → BUILD → POLISH → DEFEND → HANDOFF"
 echo ""
