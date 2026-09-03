@@ -28,7 +28,7 @@ The integration test exercised temporary-`HOME` append, replacement, idempotency
 ## Commits
 
 - `13032dd docs: record Codex global runtime safety checkpoint`
-- `8fc98ea docs: document Codex global safety boundary` (README safety boundary and static assertions).
+- `2f7c0ee docs: document Codex global safety boundary` (amended fix commit; README safety boundary and static assertions).
 
 ## Safety boundary and next action
 

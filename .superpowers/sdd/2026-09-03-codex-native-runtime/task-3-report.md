@@ -33,4 +33,4 @@ The real `~/.codex` installer was not run. The handoff snapshot records the user
 
 Prior checkpoint: `13032dd docs: record Codex global runtime safety checkpoint`.
 
-Delivered: `8fc98ea docs: document Codex global safety boundary`.
+Delivered: `2f7c0ee docs: document Codex global safety boundary` (amended fix commit).
