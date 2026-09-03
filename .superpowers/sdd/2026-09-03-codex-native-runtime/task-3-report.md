@@ -21,9 +21,9 @@ git diff --check
 git status --short
 ```
 
-`codex-global-config.sh` verified preservation, exact managed-block replacement, idempotency, permissions, malformed-marker refusal, dry-run non-mutation/diff output, and the six-skill allowlist in temporary `HOME` directories. `codex-config.sh` passed its static checks, including all four README safety assertions; `structure.sh` passed its repository-shape checks.
+`codex-global-config.sh` verified preservation, exact managed-block replacement, idempotency, permissions, malformed-marker refusal, dry-run non-mutation/diff output, and the six-skill allowlist in temporary `HOME` directories. `codex-config.sh` passed static checks, including exact README wording for the dry-run command, managed-marker ownership/replacement, and no-API-key/paid-API behavior; `structure.sh` passed its repository-shape checks.
 
-The required documentation assertions were added first and intentionally produced the expected RED result (`missing pattern ... README.md: --dry-run`, exit 1). They passed after the README update.
+The original documentation assertions produced the expected RED result before the README update. The round-2 exact assertions matched the already-delivered wording immediately; no RED phase was needed for this test-only tightening.
 
 ## Real-home boundary
 
@@ -33,4 +33,4 @@ The real `~/.codex` installer was not run. The handoff snapshot records the user
 
 Prior checkpoint: `13032dd docs: record Codex global runtime safety checkpoint`.
 
-Delivered: `2f7c0ee docs: document Codex global safety boundary` (amended fix commit).
+Commit chain: `13032dd` checkpoint, `2f7c0ee` safety documentation, `eeab253` finalized report/handoff metadata, and `f3ad610` exact static safety assertions. A final metadata correction commit follows.

@@ -23,12 +23,15 @@ bash -n install.sh
 git diff --check
 ```
 
-The integration test exercised temporary-`HOME` append, replacement, idempotency, mode preservation, malformed-marker refusal, dry-run non-mutation/diff output, and six-skill installation. The static test covered the Codex flags, allowlist, templates, adversarial-review contract, and all four README safety assertions. Those assertions first produced the expected RED failure (`--dry-run` missing, exit 1), then passed after the README update.
+The integration test exercised temporary-`HOME` append, replacement, idempotency, mode preservation, malformed-marker refusal, dry-run non-mutation/diff output, and six-skill installation. The static test covered the Codex flags, allowlist, templates, adversarial-review contract, and exact README wording for the dry-run command, managed-marker ownership/replacement, and no-API-key/paid-API behavior. The original assertions first produced the expected RED failure; the round-2 exact assertions matched the delivered wording immediately.
 
 ## Commits
 
 - `13032dd docs: record Codex global runtime safety checkpoint`
 - `2f7c0ee docs: document Codex global safety boundary` (amended fix commit; README safety boundary and static assertions).
+- `eeab253 docs: finalize Codex runtime checkpoint`
+- `f3ad610 test: assert Codex safety documentation wording`
+- Final metadata correction commit follows.
 
 ## Safety boundary and next action
 
