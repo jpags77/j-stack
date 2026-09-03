@@ -5,7 +5,7 @@
 #   + Claude CLAUDE.md lane config + Codex AGENTS.md runtime config
 #   + Claude SessionStart hook
 #
-# Usage: bash install.sh [--codex-only] [--skip-codex] [--skip-verify] [--update]
+# Usage: bash install.sh [--codex-only] [--codex-global] [--dry-run] [--skip-codex] [--skip-verify] [--update]
 
 set -euo pipefail
 
@@ -13,9 +13,13 @@ SKIP_CODEX=false
 SKIP_VERIFY=false
 UPDATE_GSTACK=false
 CODEX_ONLY=false
+CODEX_GLOBAL=false
+DRY_RUN=false
 for arg in "$@"; do
   case $arg in
     --codex-only)  CODEX_ONLY=true ;;
+    --codex-global) CODEX_GLOBAL=true ;;
+    --dry-run)     DRY_RUN=true ;;
     --skip-codex)  SKIP_CODEX=true ;;
     --skip-verify) SKIP_VERIFY=true ;;
     --update)      UPDATE_GSTACK=true ;;
@@ -27,6 +31,10 @@ info()  { echo -e "${GREEN}[j-stack]${NC} $*"; }
 warn()  { echo -e "${YELLOW}[warn]${NC} $*"; }
 error() { echo -e "${RED}[error]${NC} $*" >&2; }
 halt()  { error "$*"; exit 1; }
+
+if [ "$DRY_RUN" = true ] && { [ "$CODEX_ONLY" = false ] || [ "$CODEX_GLOBAL" = false ]; }; then
+  halt "--dry-run requires both --codex-only and --codex-global."
+fi
 
 SKILLS_DIR="${HOME}/.claude/skills"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -253,6 +261,85 @@ ${CODEX_ROLE}"
 AGENTS_CODEX_APPEND="$CODEX_ROLE"
 
 PROJECT_AGENTS="${PWD}/AGENTS.md"
+
+# ─── Phase 3.2: Codex global policy ──────────────────────────────────────────
+
+if [ "$CODEX_GLOBAL" = true ]; then
+  info "Phase 3.2 — Configuring global Codex policy…"
+  CODEX_GLOBAL_AGENTS="${HOME}/.codex/AGENTS.md"
+  CODEX_GLOBAL_TEMPLATE="${SCRIPT_DIR}/templates/codex-global-policy.md"
+  python3 - "$CODEX_GLOBAL_AGENTS" "$CODEX_GLOBAL_TEMPLATE" "$DRY_RUN" <<'PYEOF'
+import difflib
+import os
+import re
+import stat
+import sys
+import tempfile
+
+path, template_path, dry_run = sys.argv[1], sys.argv[2], sys.argv[3] == "true"
+start = "<!-- j-stack:codex-global-policy:start version=1 -->"
+end = "<!-- j-stack:codex-global-policy:end -->"
+token_re = re.compile(r"<!-- j-stack:codex-global-policy:(?:start|end)[^>]*-->")
+valid_start_re = re.compile(r"<!-- j-stack:codex-global-policy:start version=\d+ -->")
+
+try:
+    old = open(path, encoding="utf-8").read() if os.path.exists(path) else ""
+    template = open(template_path, encoding="utf-8").read().rstrip("\n")
+except OSError as exc:
+    print(f"codex global policy: {exc}", file=sys.stderr)
+    sys.exit(1)
+
+lines = old.splitlines(keepends=True)
+markers = []
+for index, line in enumerate(lines):
+    found = token_re.findall(line)
+    if found:
+        if line.strip() != end and not valid_start_re.fullmatch(line.strip()):
+            print("codex global policy: malformed marker line; repair AGENTS.md manually", file=sys.stderr)
+            sys.exit(1)
+        markers.extend((index, marker) for marker in found)
+
+starts = [index for index, marker in markers if marker.startswith("<!-- j-stack:codex-global-policy:start")]
+ends = [index for index, marker in markers if marker == end]
+if len(starts) > 1 or len(ends) > 1 or len(starts) != len(ends) or (starts and starts[0] >= ends[0]):
+    print("codex global policy: malformed marker layout; expected one ordered marker pair", file=sys.stderr)
+    sys.exit(1)
+
+block = f"{start}\n{template}\n{end}\n"
+if not starts:
+    prefix = old if not old or old.endswith("\n") else old + "\n"
+    new = prefix + block
+else:
+    new = "".join(lines[:starts[0]]) + block + "".join(lines[ends[0] + 1:])
+
+if dry_run:
+    sys.stdout.writelines(difflib.unified_diff(old.splitlines(keepends=True), new.splitlines(keepends=True),
+                                               fromfile=path, tofile=path))
+    sys.exit(0)
+
+mode = stat.S_IMODE(os.stat(path).st_mode) if os.path.exists(path) else 0o644
+directory = os.path.dirname(path) or "."
+os.makedirs(directory, exist_ok=True)
+fd, temporary = tempfile.mkstemp(prefix=".codex-global-policy.", dir=directory)
+try:
+    os.fchmod(fd, mode)
+    with os.fdopen(fd, "w", encoding="utf-8") as output:
+        output.write(new)
+    os.replace(temporary, path)
+except Exception:
+    try:
+        os.unlink(temporary)
+    except OSError:
+        pass
+    raise
+print(f"codex global policy: {'updated' if starts else 'installed'} {path}")
+PYEOF
+fi
+
+if [ "$DRY_RUN" = true ]; then
+  exit 0
+fi
+
 if [ -f "$PROJECT_AGENTS" ]; then
   if grep -q "Codex role" "$PROJECT_AGENTS"; then
     info "  AGENTS.md already contains Codex lane configuration — skipping"
