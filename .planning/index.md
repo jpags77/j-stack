@@ -8,7 +8,7 @@ One-line summary of every page in this wiki. Update on every page creation.
 **Phase:** BUILD (maintenance) — this is j-stack's own repo under continuous self-improvement, not a single EXPAND→HANDOFF pass. Engagement Context below is the standing spec; the 2026-07-10 self-audit backlog (handoffs/2026-07-10T1803-snapshot.md, N1-N18) is the current unit of work.
 **Fidelity target:** C — MVP (production-ready Claude Code skill stack)
 **Prior-art:** ⬜ pending — the original pipeline design predates prior-art-survey's existence and was never run against it; genuinely outstanding, not just stale bookkeeping.
-**Last updated:** 2026-07-19T17:15:12Z
+**Last updated:** 2026-09-03T00:00:00Z
 
 ## Iteration Progress
 
@@ -43,6 +43,7 @@ Which phase steps have run in the **current** iteration. Reset all to ⬜ when t
 - [ponytail-integration.md](vision/ponytail-integration.md) — ponytail plugin integration: plan-gate decision, full level, audit findings, /goal and auto-research context
 - [graphify-integration.md](vision/graphify-integration.md) — graphify on-demand knowledge graph: session-start detection, existing-repo use case, wiki convention
 - [headroom-integration.md](vision/headroom-integration.md) — headroom context compression: global triggers + j-stack pipeline checkpoints
+- [codex-global-runtime.md](vision/codex-global-runtime.md) — approved design for opt-in global Codex policy, Codex-native skills, and fresh-context adversarial review
 
 ## prior-art/
 (empty — populate after prior-art-survey)
