@@ -269,7 +269,7 @@ if [ "$CODEX_GLOBAL" = true ]; then
   info "Phase 3.2 — Configuring global Codex policy…"
   CODEX_GLOBAL_AGENTS="${HOME}/.codex/AGENTS.md"
   CODEX_GLOBAL_TEMPLATE="${SCRIPT_DIR}/templates/codex-global-policy.md"
-  python3 - "$CODEX_GLOBAL_AGENTS" "$CODEX_GLOBAL_TEMPLATE" "$DRY_RUN" <<'PYEOF'
+  PYTHONDONTWRITEBYTECODE=1 python3 - "$CODEX_GLOBAL_AGENTS" "$CODEX_GLOBAL_TEMPLATE" "$DRY_RUN" <<'PYEOF'
 import difflib
 import os
 import re
@@ -336,6 +336,13 @@ except Exception:
 print(f"codex global policy: {'updated' if starts else 'installed'} {path}")
 PYEOF
 
+fi
+
+if [ "$DRY_RUN" = true ]; then
+  exit 0
+fi
+
+if [ "$CODEX_GLOBAL" = true ]; then
   CODEX_SKILLS_DIR="${HOME}/.codex/skills"
   for skill in "${CODEX_SKILLS[@]}"; do
     src="${SCRIPT_DIR}/skills/codex/${skill}"
@@ -348,10 +355,6 @@ PYEOF
     cp -r "${SCRIPT_DIR}/skills/codex/${skill}" "${CODEX_SKILLS_DIR}/"
     info "  Installed Codex skill: ${skill}"
   done
-fi
-
-if [ "$DRY_RUN" = true ]; then
-  exit 0
 fi
 
 if [ -f "$PROJECT_AGENTS" ]; then

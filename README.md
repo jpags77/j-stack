@@ -66,7 +66,7 @@ Together these aren't features — they're **a baseline of agentic coding discip
 | `/design-html` | Takes a mockup or design direction and converts it to production-quality HTML/CSS. | The execution skill for UI work. Pairs with `/design-shotgun` — explore, then build. |
 | `/design-review` | Audits the implemented UI against design principles: consistency, hierarchy, accessibility basics. | Closes the loop on UI work after `/design-html`. Catches regressions before the demo. |
 | `/cso` | Chief Security Officer mode. OWASP Top 10 + STRIDE analysis with findings by severity. | Security exploit reasoning is high-judgment work — Opus. Runs before DEFEND so the stakeholder pack has a real security section. |
-| `/codex` | Orchestrates a shell-out to OpenAI Codex CLI. | Used internally by the `second-opinion` custom skill for cross-vendor review. Not invoked directly. |
+| `/codex` | (Claude runtime) Orchestrates a shell-out to OpenAI Codex CLI. | Used internally by the Claude-only `second-opinion` custom skill; not part of the native Codex global skill set. |
 | `/document-release` | Reads the diff and updates docs to match. | No manual documentation sprint at the end. Docs are a diff operation, not a writing assignment. |
 
 **Safety — Haiku (mechanical)**
@@ -105,7 +105,7 @@ The output isn't just research — it becomes the "what else did you consider" s
 | `build-mode` | Session orientation ritual. Run at the start of every session — reads wiki state, confirms fidelity target, surfaces scope changes, handles iteration bumps, and declares the session goal before any work begins. Prevents silent drift between sessions. |
 | `poc-wiki-init` | Bootstraps the `.planning/` wiki at project start. Asks the fidelity target question upfront, generates schema files for Claude Code, Codex, Cursor, and ChatGPT. Idempotent — safe to run again. |
 | `handoff-snapshot` | Writes a timestamped blackboard snapshot to `.planning/handoffs/` with typed state, claims, provenance, conflicts, decisions, next steps, touched artifacts, and a paste-ready continuation prompt for the next tool. |
-| `second-opinion` | Dispatches an artifact to Codex CLI for independent review, then synthesizes a convergence/divergence matrix. Two AI vendors reviewing the same artifact independently. |
+| `second-opinion` | (Claude runtime) Dispatches an artifact to Codex CLI for independent review, then synthesizes a convergence/divergence matrix. |
 | `stakeholder-pack` | Aggregates vision, prior-art, security, and cross-model review outputs into a single executive-ready document. Pre-answers the five standard enterprise PoC questions. |
 
 ---
@@ -155,7 +155,7 @@ EXPAND → REFINE → SURVEY → PLAN → BUILD → POLISH → DEFEND → HANDOF
 | **Plan** | `writing-plans` (SP), `ponytail-review spec` | Full implementation spec, Opus-reviewed. Ponytail reviews the spec for YAGNI before BUILD starts — catch bloat before tokens are spent generating it. |
 | **Build** | `subagent-driven-dev` (SP), `/design-shotgun`, `/design-html` | TDD execution. Parallel subagents in isolated worktrees, implementing against the spec. |
 | **Polish** | `/qa`, `/design-review`, `/cso` | Audit against spec, design review, OWASP/STRIDE security analysis. |
-| **Defend** | `second-opinion`, `stakeholder-pack` | Codex independently reviews Claude's output. Findings synthesized. Stakeholder pack assembled. |
+| **Defend (Claude runtime)** | `second-opinion`, `stakeholder-pack` | An independent Codex CLI review is synthesized with the primary review. |
 | **Handoff** | `/document-release`, `handoff-snapshot` | Docs generated from diff. Wiki snapshot written for cross-tool resumption. |
 
 ### Complete skill flow
@@ -205,8 +205,8 @@ POLISH  (build-mode checks log.md and dispatches to first pending)
   /cso            [gstack · opus]
 
 DEFEND
-  second-opinion   [custom · opus]
-  └── /codex  [gstack · sonnet]  ← shells out to OpenAI Codex CLI
+  second-opinion   [Claude-only custom · opus]
+  └── /codex  [Claude runtime gstack · sonnet]  ← shells out to OpenAI Codex CLI
   stakeholder-pack [custom · opus]
 
 HANDOFF
@@ -245,7 +245,7 @@ j-stack produces artifacts that answer these before the meeting:
 | What else did you consider? | `prior-art-survey` output (OSS, libraries, patterns) |
 | Is it secure? | `/cso` OWASP/STRIDE security review |
 | Does it actually work? | `/qa` audit against spec + TDD test suite |
-| Why should I trust one AI vendor? | `second-opinion` cross-vendor convergence matrix |
+| Why should I trust one AI vendor? | `second-opinion` cross-vendor convergence matrix (Claude runtime) |
 
 All five are assembled by `stakeholder-pack` into a single document before the demo. The meeting shifts from "defend the work" to "discuss what's next."
 
@@ -281,7 +281,7 @@ bash install.sh
 
 ```bash
 bash install.sh --codex-only    # only configure the Codex runtime (AGENTS.md + Codex check)
-bash install.sh --skip-codex    # skip Codex CLI check (if not using second-opinion)
+bash install.sh --skip-codex    # skip the Codex CLI check for Claude-only installs
 bash install.sh --skip-verify   # skip post-install verification
 ```
 

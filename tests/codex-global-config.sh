@@ -4,7 +4,9 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 tmp_home="$(mktemp -d)"
 tmp_target="$(mktemp -d)"
-trap 'rm -rf "$tmp_home" "$tmp_target"' EXIT
+dry_home="$(mktemp -d)"
+dry_target="$(mktemp -d)"
+trap 'rm -rf "$tmp_home" "$tmp_target" "$dry_home" "$dry_target"' EXIT
 mkdir -p "$tmp_home/.codex"
 global_agents="$tmp_home/.codex/AGENTS.md"
 
@@ -23,6 +25,16 @@ run_dry_install() {
   (cd "$tmp_target" && HOME="$tmp_home" bash "$ROOT/install.sh" \
     --codex-only --codex-global --dry-run --skip-codex --skip-verify)
 }
+run_fresh_dry_install() {
+  (cd "$dry_target" && HOME="$dry_home" bash "$ROOT/install.sh" \
+    --codex-only --codex-global --dry-run --skip-codex --skip-verify)
+}
+
+dry_before="$(find "$dry_home" -print | sort)"
+run_fresh_dry_install >/dev/null
+dry_after="$(find "$dry_home" -print | sort)"
+[ "$dry_before" = "$dry_after" ] || fail "dry run mutated temporary HOME"
+[ ! -e "$dry_home/.codex/skills" ] || fail "dry run created Codex skill directory"
 
 printf '%s\n' '# Personal rules' \
   'Always use my preferred formatter.' \

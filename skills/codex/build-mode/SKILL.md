@@ -5,8 +5,12 @@ description: Orients Codex sessions that will produce code, plans, designs, or r
 
 # build-mode
 
-Use this skill for coding, planning, design, or review work. Do not activate it
-for pure Q&A, lookups, or one-off non-coding work.
+Use this skill for coding, planning, design, or review work. First classify the
+repository: if it is j-stack-governed, it has `AGENTS.md` plus the `.planning/`
+blackboard and this workflow applies; if it is not j-stack-governed, report
+that the j-stack workflow does not apply and continue under local/user
+instructions without requiring `.planning/` reads. Do not activate for pure
+Q&A, lookups, or one-off non-coding work.
 
 1. Read `AGENTS.md`, `.planning/index.md`, the last 15 entries of
    `.planning/log.md`, and the newest file in `.planning/handoffs/`.
