@@ -15,6 +15,7 @@ UPDATE_GSTACK=false
 CODEX_ONLY=false
 CODEX_GLOBAL=false
 DRY_RUN=false
+CODEX_SKILLS=(build-mode poc-wiki-init handoff-snapshot prior-art-survey stakeholder-pack adversarial-review)
 for arg in "$@"; do
   case $arg in
     --codex-only)  CODEX_ONLY=true ;;
@@ -334,6 +335,19 @@ except Exception:
     raise
 print(f"codex global policy: {'updated' if starts else 'installed'} {path}")
 PYEOF
+
+  CODEX_SKILLS_DIR="${HOME}/.codex/skills"
+  for skill in "${CODEX_SKILLS[@]}"; do
+    src="${SCRIPT_DIR}/skills/codex/${skill}"
+    if [ ! -d "$src" ]; then
+      halt "Expected skills/codex/${skill}/ not found in repo. Clone may be incomplete."
+    fi
+  done
+  mkdir -p "$CODEX_SKILLS_DIR"
+  for skill in "${CODEX_SKILLS[@]}"; do
+    cp -r "${SCRIPT_DIR}/skills/codex/${skill}" "${CODEX_SKILLS_DIR}/"
+    info "  Installed Codex skill: ${skill}"
+  done
 fi
 
 if [ "$DRY_RUN" = true ]; then

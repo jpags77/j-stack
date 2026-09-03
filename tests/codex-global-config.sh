@@ -37,6 +37,13 @@ assert_count "$global_agents" "j-stack:codex-global-policy:start" 1
 assert_not_contains "$global_agents" "old managed content"
 assert_contains "$global_agents" "j-stack:codex-global-policy:start version=1"
 
+for skill in build-mode poc-wiki-init handoff-snapshot prior-art-survey stakeholder-pack adversarial-review; do
+  [ -f "$tmp_home/.codex/skills/$skill/SKILL.md" ] || fail "missing $skill"
+done
+[ ! -e "$tmp_home/.codex/skills/second-opinion" ] || fail "Claude-only second-opinion copied"
+assert_not_contains "$tmp_home/.codex/skills/adversarial-review/SKILL.md" "API key"
+assert_not_contains "$tmp_home/.codex/skills/adversarial-review/SKILL.md" "claude"
+
 first="$(cksum "$global_agents")"
 run_install
 [ "$first" = "$(cksum "$global_agents")" ] || fail "second install changed AGENTS.md"

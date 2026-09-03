@@ -15,6 +15,10 @@ assert_contains() {
 
 assert_contains "${ROOT}/install.sh" "Phase 3.25 — Configuring project AGENTS.md"
 assert_contains "${ROOT}/install.sh" "--codex-only"
+assert_contains "${ROOT}/install.sh" "--codex-global"
+assert_contains "${ROOT}/install.sh" "CODEX_SKILLS=(build-mode poc-wiki-init handoff-snapshot prior-art-survey stakeholder-pack adversarial-review)"
+assert_contains "${ROOT}/install.sh" 'skills/codex/${skill}'
+assert_contains "${ROOT}/install.sh" "codex-global-policy.md"
 assert_contains "${ROOT}/install.sh" "Codex-only mode"
 assert_contains "${ROOT}/install.sh" "PROJECT_AGENTS"
 assert_contains "${ROOT}/install.sh" "AGENTS_SECTION"
@@ -35,3 +39,6 @@ assert_contains "${ROOT}/README.md" "GitHub integration"
 assert_contains "${ROOT}/README.md" "Codex runtime"
 assert_contains "${ROOT}/README.md" "bash install.sh --codex-only"
 assert_contains "${ROOT}/templates/codex-role.md" "Direct runtime mode"
+assert_contains "${ROOT}/skills/codex/adversarial-review/SKILL.md" "fresh-context"
+assert_contains "${ROOT}/skills/codex/adversarial-review/SKILL.md" "challenge rubric"
+assert_contains "${ROOT}/skills/codex/adversarial-review/SKILL.md" "paid API calls"

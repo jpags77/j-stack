@@ -265,8 +265,9 @@ All five are assembled by `stakeholder-pack` into a single document before the d
 
 **Codex runtime:**
 
-- [OpenAI Codex CLI](https://github.com/openai/codex) installed and authenticated (for `second-opinion`)
+- [OpenAI Codex](https://github.com/openai/codex) available for the active session
 - `AGENTS.md` in the target repo with the j-stack Codex runtime mapping (installed by `bash install.sh --codex-only`, or by the default installer)
+- Optional global Codex policy and native skills: `bash install.sh --codex-only --codex-global`
 - GitHub access for the repo: a configured `origin` remote, authenticated `git` push rights, and optionally the GitHub CLI or Codex GitHub connector for PR/issue context
 - git, bash, python3, standard Unix tools
 
@@ -286,7 +287,7 @@ bash install.sh --skip-verify   # skip post-install verification
 
 The default script clones gstack, copies 11 cherry-picked skills into `~/.claude/skills/` with model directives injected, installs the 5 custom skills plus the bundled `prior-art-survey` (all from `skills/` files in this repo), installs the three scout agents into `~/.claude/agents/` (pinned to `model: sonnet`, honored by the Agent tool at dispatch), writes the project `CLAUDE.md` and `AGENTS.md` lane configuration, and merges a `SessionStart` hook into `~/.claude/settings.json` so `build-mode` fires automatically (see [Manual hook setup](#manual-hook-setup) if you don't have `python3`).
 
-`--codex-only` skips Claude CLI/plugin/skill/agent/hook installation. It checks for the Codex CLI, writes the project `AGENTS.md` runtime mapping, and verifies the Codex surface. Use it when the repo should be workable from Codex without installing the Claude skill host on that machine.
+`--codex-only` skips the other runtime's CLI/plugin/skill/agent/hook installation. It checks for the Codex CLI, writes the project `AGENTS.md` runtime mapping, and verifies the Codex surface. Add `--codex-global` to install the opt-in global policy and the six native skills (`build-mode`, `poc-wiki-init`, `handoff-snapshot`, `prior-art-survey`, `stakeholder-pack`, and `adversarial-review`) under `~/.codex/`.
 
 ### Manual hook setup
 
@@ -335,11 +336,11 @@ Codex should prefer the GitHub connector for repository, issue, and pull request
 
 ### Codex runtime
 
-j-stack treats Codex as a separate runtime through `AGENTS.md` and the `.planning/` wiki. Claude remains the primary skill host for Claude slash commands and plugin execution; Codex runs the same process directly from repo instructions and durable planning state.
+j-stack treats Codex as a separate runtime through `AGENTS.md` and the `.planning/` wiki. Codex runs the same process directly from repo instructions and durable planning state, with its native skills installed only when explicitly requested.
 
 - **Direct runtime mode:** open the repo in Codex intentionally. Codex reads `AGENTS.md`, `.planning/index.md`, `.planning/log.md`, and the latest `.planning/handoffs/` snapshot, then continues the current phase.
 - **Fallback mode:** when Claude usage limits hit, open the repo in Codex and resume from the same `.planning/` state.
-- **Review mode:** `second-opinion` uses Codex as the independent reviewer for a spec, diff, or architecture decision. Codex should return review-ready findings that can be filed under `.planning/reviews/`.
+- **Review mode:** `adversarial-review` uses an isolated fresh-context reviewer when available for a spec, diff, or architecture decision. It returns prioritized findings to the primary session, which decides what belongs in `.planning/`.
 
 Codex does not need to run Claude slash commands directly. `AGENTS.md` maps those commands to equivalent Codex behavior while preserving the same phase order and wiki write-back rules.
 
@@ -347,6 +348,8 @@ To configure only this runtime in a repo:
 
 ```bash
 bash install.sh --codex-only
+# Optional global policy + Codex-native skills:
+bash install.sh --codex-only --codex-global
 ```
 
 Then start Codex in the repo. There is no Claude-style `SessionStart` hook for Codex in this stack today; the bootstrap contract is explicit: read `AGENTS.md`, then `.planning/index.md`, `.planning/log.md`, and the latest `.planning/handoffs/` snapshot before non-trivial work.
