@@ -8,7 +8,7 @@ Task: Task 3 — documentation and real-home safety boundary
 
 - Approved design: `.planning/vision/codex-global-runtime.md`.
 - Task 1 and Task 2 implementation is committed through `b1e55e8` (`fix: harden Codex global dry run`).
-- Task 2's README safety documentation is retained unchanged per the controller ruling; this task confirms it rather than duplicating it.
+- Task 3's README safety boundary is explicit: dry-run command, temporary-HOME test-first sequence, managed-marker ownership, and no-API-key/paid-API review behavior.
 - No real `~/.codex` installer invocation was run.
 
 ## Verification
@@ -23,7 +23,12 @@ bash -n install.sh
 git diff --check
 ```
 
-The integration test exercised temporary-`HOME` append, replacement, idempotency, mode preservation, malformed-marker refusal, dry-run non-mutation/diff output, and six-skill installation. The static test covered the Codex flags, allowlist, templates, and adversarial-review contract.
+The integration test exercised temporary-`HOME` append, replacement, idempotency, mode preservation, malformed-marker refusal, dry-run non-mutation/diff output, and six-skill installation. The static test covered the Codex flags, allowlist, templates, adversarial-review contract, and all four README safety assertions. Those assertions first produced the expected RED failure (`--dry-run` missing, exit 1), then passed after the README update.
+
+## Commits
+
+- `13032dd docs: record Codex global runtime safety checkpoint`
+- `8fc98ea docs: document Codex global safety boundary` (README safety boundary and static assertions).
 
 ## Safety boundary and next action
 

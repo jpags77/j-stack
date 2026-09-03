@@ -289,6 +289,8 @@ The default script clones gstack, copies 11 cherry-picked skills into `~/.claude
 
 `--codex-only` skips the other runtime's CLI/plugin/skill/agent/hook installation. It checks for the Codex CLI, writes the project `AGENTS.md` runtime mapping, and verifies the Codex surface. Add `--codex-global` to install the opt-in global policy and the six native skills (`build-mode`, `poc-wiki-init`, `handoff-snapshot`, `prior-art-survey`, `stakeholder-pack`, and `adversarial-review`) under `~/.codex/`.
 
+For a safe global-policy preview, run `bash install.sh --codex-only --codex-global --dry-run`. The dry run prints the proposed diff and writes nothing. Before any real `~/.codex` install, run the temporary-HOME tests (`bash tests/codex-global-config.sh` and `bash tests/codex-config.sh`), review the dry-run output, and then explicitly authorize the real command. The managed marker block is the only content j-stack owns: an existing valid block is replaced in place while unrelated instructions and file permissions are preserved; malformed or duplicate markers fail without mutation.
+
 ### Manual hook setup
 
 `install.sh` uses `python3` to merge the `SessionStart` hook into `~/.claude/settings.json` without disturbing your existing settings. If `python3` isn't available, the installer skips this step and warns you — add the hook by hand. Merge this into the `hooks` object of `~/.claude/settings.json` (create the file with `{ }` if it doesn't exist):
@@ -341,6 +343,7 @@ j-stack treats Codex as a separate runtime through `AGENTS.md` and the `.plannin
 - **Direct runtime mode:** open the repo in Codex intentionally. Codex reads `AGENTS.md`, `.planning/index.md`, `.planning/log.md`, and the latest `.planning/handoffs/` snapshot, then continues the current phase.
 - **Fallback mode:** when Claude usage limits hit, open the repo in Codex and resume from the same `.planning/` state.
 - **Review mode:** `adversarial-review` uses an isolated fresh-context reviewer when available for a spec, diff, or architecture decision. It returns prioritized findings to the primary session, which decides what belongs in `.planning/`.
+- `adversarial-review` uses the native isolated review capability when available and requires no API key or paid API; if that capability is unavailable, it reports the limitation rather than falling back to an external API.
 
 Codex does not need to run Claude slash commands directly. `AGENTS.md` maps those commands to equivalent Codex behavior while preserving the same phase order and wiki write-back rules.
 
