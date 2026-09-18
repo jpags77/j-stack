@@ -32,6 +32,9 @@ The integration test exercised temporary-`HOME` append, replacement, idempotency
 - `eeab253 docs: finalize Codex runtime checkpoint`
 - `f3ad610 test: assert Codex safety documentation wording`
 - `53a5cb1 docs: correct Codex checkpoint evidence`
+- `1787bec docs: close Codex checkpoint lineage` (last recorded checkpoint before this metadata correction).
+
+The commit containing this metadata correction is authoritative in `git log`; its SHA is intentionally not self-embedded.
 
 ## Safety boundary and next action
 
