@@ -24,6 +24,7 @@ for arg in "$@"; do
     --skip-codex)  SKIP_CODEX=true ;;
     --skip-verify) SKIP_VERIFY=true ;;
     --update)      UPDATE_GSTACK=true ;;
+    *)             echo "[error] Unknown option: ${arg}" >&2; exit 1 ;;
   esac
 done
 
@@ -68,7 +69,7 @@ fi
 
 # ─── Phase 0.5: Codex CLI ─────────────────────────────────────────────────────
 
-if [ "$SKIP_CODEX" = false ]; then
+if [ "$SKIP_CODEX" = false ] && [ "$CODEX_GLOBAL" = false ]; then
   info "Phase 0 — Codex CLI setup…"
   if command -v codex &>/dev/null; then
     CODEX_VER=$(codex --version 2>/dev/null || echo "unknown")
@@ -273,6 +274,7 @@ if [ "$CODEX_GLOBAL" = true ]; then
 import difflib
 import os
 import re
+import shutil
 import stat
 import sys
 import tempfile
@@ -280,12 +282,12 @@ import tempfile
 path, template_path, dry_run = sys.argv[1], sys.argv[2], sys.argv[3] == "true"
 start = "<!-- j-stack:codex-global-policy:start version=1 -->"
 end = "<!-- j-stack:codex-global-policy:end -->"
-token_re = re.compile(r"<!-- j-stack:codex-global-policy:(?:start|end)[^>]*-->")
+marker_prefix = "<!-- j-stack:codex-global-policy:"
 valid_start_re = re.compile(r"<!-- j-stack:codex-global-policy:start version=\d+ -->")
 
 try:
-    old = open(path, encoding="utf-8").read() if os.path.exists(path) else ""
-    template = open(template_path, encoding="utf-8").read().rstrip("\n")
+    old = open(path, encoding="utf-8", newline="").read() if os.path.exists(path) else ""
+    template = open(template_path, encoding="utf-8", newline="").read().rstrip("\r\n")
 except OSError as exc:
     print(f"codex global policy: {exc}", file=sys.stderr)
     sys.exit(1)
@@ -293,12 +295,12 @@ except OSError as exc:
 lines = old.splitlines(keepends=True)
 markers = []
 for index, line in enumerate(lines):
-    found = token_re.findall(line)
-    if found:
-        if line.strip() != end and not valid_start_re.fullmatch(line.strip()):
+    if marker_prefix in line:
+        marker = line.strip()
+        if marker != end and not valid_start_re.fullmatch(marker):
             print("codex global policy: malformed marker line; repair AGENTS.md manually", file=sys.stderr)
             sys.exit(1)
-        markers.extend((index, marker) for marker in found)
+        markers.append((index, marker))
 
 starts = [index for index, marker in markers if marker.startswith("<!-- j-stack:codex-global-policy:start")]
 ends = [index for index, marker in markers if marker == end]
@@ -306,9 +308,11 @@ if len(starts) > 1 or len(ends) > 1 or len(starts) != len(ends) or (starts and s
     print("codex global policy: malformed marker layout; expected one ordered marker pair", file=sys.stderr)
     sys.exit(1)
 
-block = f"{start}\n{template}\n{end}\n"
+line_ending = "\r\n" if "\r\n" in old else "\n"
+template = template.replace("\r\n", "\n").replace("\n", line_ending)
+block = f"{start}{line_ending}{template}{line_ending}{end}{line_ending}"
 if not starts:
-    prefix = old if not old or old.endswith("\n") else old + "\n"
+    prefix = old if not old or old.endswith(("\n", "\r")) else old + line_ending
     new = prefix + block
 else:
     new = "".join(lines[:starts[0]]) + block + "".join(lines[ends[0] + 1:])
@@ -320,12 +324,17 @@ if dry_run:
 
 mode = stat.S_IMODE(os.stat(path).st_mode) if os.path.exists(path) else 0o644
 directory = os.path.dirname(path) or "."
+if os.path.lexists(path) and os.path.islink(path):
+    print("codex global policy: refusing to replace symlinked AGENTS.md; repair the symlink and rerun", file=sys.stderr)
+    sys.exit(1)
 os.makedirs(directory, exist_ok=True)
 fd, temporary = tempfile.mkstemp(prefix=".codex-global-policy.", dir=directory)
 try:
     os.fchmod(fd, mode)
-    with os.fdopen(fd, "w", encoding="utf-8") as output:
+    with os.fdopen(fd, "w", encoding="utf-8", newline="") as output:
         output.write(new)
+    if os.path.exists(path):
+        shutil.copystat(path, temporary, follow_symlinks=False)
     os.replace(temporary, path)
 except Exception:
     try:
@@ -352,7 +361,13 @@ if [ "$CODEX_GLOBAL" = true ]; then
   done
   mkdir -p "$CODEX_SKILLS_DIR"
   for skill in "${CODEX_SKILLS[@]}"; do
-    cp -r "${SCRIPT_DIR}/skills/codex/${skill}" "${CODEX_SKILLS_DIR}/"
+    target="${CODEX_SKILLS_DIR}/${skill}"
+    case "$target" in
+      "${CODEX_SKILLS_DIR}"/*) ;;
+      *) halt "Refusing to remove Codex skill outside allowlisted directory: ${target}" ;;
+    esac
+    rm -rf -- "$target"
+    cp -r "${SCRIPT_DIR}/skills/codex/${skill}" "$CODEX_SKILLS_DIR/"
     info "  Installed Codex skill: ${skill}"
   done
 fi

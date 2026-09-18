@@ -13,3 +13,9 @@ the established `.planning/` directories and schema files for the repository's
 supported tools. Initialize `index.md` and `log.md` using the existing schema.
 The wiki is the shared source of truth; preserve its files and make reruns
 idempotent. Record the initialization decision and next phase in the blackboard.
+
+The minimum compatible layout is `.planning/index.md`, `.planning/log.md`,
+`.planning/vision/`, `.planning/prior-art/`, `.planning/plans/`,
+`.planning/reviews/`, `.planning/stakeholder-pack/`, and
+`.planning/handoffs/`. Use markdown files with the headings and links expected
+by the repository's `AGENTS.md`; never overwrite existing files.

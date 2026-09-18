@@ -20,6 +20,8 @@ assert_contains "${ROOT}/install.sh" "CODEX_SKILLS=(build-mode poc-wiki-init han
 assert_contains "${ROOT}/install.sh" 'skills/codex/${skill}'
 assert_contains "${ROOT}/install.sh" "codex-global-policy.md"
 assert_contains "${ROOT}/install.sh" "Codex-only mode"
+assert_contains "${ROOT}/install.sh" "Unknown option"
+assert_contains "${ROOT}/install.sh" 'if [ "$SKIP_CODEX" = false ] && [ "$CODEX_GLOBAL" = false ]'
 assert_contains "${ROOT}/install.sh" "PROJECT_AGENTS"
 assert_contains "${ROOT}/install.sh" "AGENTS_SECTION"
 assert_contains "${ROOT}/install.sh" "Created AGENTS.md with Codex lane configuration"
@@ -50,5 +52,14 @@ assert_contains "${ROOT}/templates/codex-role.md" "Direct runtime mode"
 assert_contains "${ROOT}/skills/codex/adversarial-review/SKILL.md" "fresh-context"
 assert_contains "${ROOT}/skills/codex/adversarial-review/SKILL.md" "challenge rubric"
 assert_contains "${ROOT}/skills/codex/adversarial-review/SKILL.md" "paid API calls"
+assert_contains "${ROOT}/skills/codex/adversarial-review/SKILL.md" 'fork_turns: "none"'
+assert_contains "${ROOT}/skills/codex/adversarial-review/SKILL.md" "gpt-5.6-sol"
+assert_contains "${ROOT}/skills/codex/adversarial-review/SKILL.md" "high"
+assert_contains "${ROOT}/skills/codex/adversarial-review/SKILL.md" "named artifact"
+assert_contains "${ROOT}/skills/codex/poc-wiki-init/SKILL.md" ".planning/index.md"
+assert_contains "${ROOT}/skills/codex/poc-wiki-init/SKILL.md" ".planning/log.md"
+assert_contains "${ROOT}/skills/codex/handoff-snapshot/SKILL.md" "j-stack.handoff.blackboard.v1"
+assert_contains "${ROOT}/skills/codex/handoff-snapshot/SKILL.md" "repository_state"
+assert_contains "${ROOT}/skills/codex/stakeholder-pack/SKILL.md" "optional"
 assert_contains "${ROOT}/skills/codex/build-mode/SKILL.md" "j-stack-governed"
 assert_contains "${ROOT}/skills/codex/build-mode/SKILL.md" "workflow does not apply"

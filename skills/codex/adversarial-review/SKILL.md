@@ -6,10 +6,11 @@ description: Runs a fresh-context, high-effort independent challenge of a named 
 # adversarial-review
 
 The primary session must name the artifact, decision, or diff under review.
-When the current runtime supports it, create an isolated fresh-context Sol
-reviewer at high effort. Give it an explicit challenge rubric covering
-correctness, omissions, edge cases, security, operability, and alignment with
-the stated requirements.
+When the current runtime supports it, issue exactly this native request: create
+an isolated zero-history reviewer with `fork_turns: "none"`, using model
+`gpt-5.6-sol` at `high` effort. Supply only the named artifact and this
+challenge rubric: correctness, omissions, edge cases, security, operability,
+and alignment with the stated requirements.
 
 Return prioritized findings to the primary session, including evidence,
 severity, and a recommended disposition. If fresh-context review is not

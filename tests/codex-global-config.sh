@@ -36,6 +36,15 @@ dry_after="$(find "$dry_home" -print | sort)"
 [ "$dry_before" = "$dry_after" ] || fail "dry run mutated temporary HOME"
 [ ! -e "$dry_home/.codex/skills" ] || fail "dry run created Codex skill directory"
 
+# Unknown flags fail closed before creating either global policy or skills.
+unknown_home="$(mktemp -d)"
+unknown_target="$(mktemp -d)"
+(cd "$unknown_target" && HOME="$unknown_home" bash "$ROOT/install.sh" \
+  --codex-only --codex-global --dryrun --skip-codex --skip-verify) && fail "unknown flag accepted"
+[ ! -e "$unknown_home/.codex/AGENTS.md" ] || fail "unknown flag created global policy"
+[ ! -e "$unknown_home/.codex/skills" ] || fail "unknown flag created Codex skills"
+rm -rf "$unknown_home" "$unknown_target"
+
 printf '%s\n' '# Personal rules' \
   'Always use my preferred formatter.' \
   '<!-- j-stack:codex-global-policy:start version=0 -->' \
@@ -77,6 +86,45 @@ printf '%s\n' '# Personal rules' \
 before="$(cksum "$global_agents")"
 assert_fails run_install
 [ "$before" = "$(cksum "$global_agents")" ] || fail "malformed layout changed AGENTS.md"
+
+# Every marker-prefix line must be exact; malformed end syntax and duplicate pairs fail.
+printf '%s\n' '<!-- j-stack:codex-global-policy:end extra -->' > "$global_agents"
+before="$(cksum "$global_agents")"
+assert_fails run_install
+[ "$before" = "$(cksum "$global_agents")" ] || fail "malformed end marker changed AGENTS.md"
+
+printf '%s\n' '<!-- j-stack:codex-global-policy:start version=1 -->' \
+  '<!-- j-stack:codex-global-policy:start version=1 -->' \
+  '<!-- j-stack:codex-global-policy:end -->' > "$global_agents"
+before="$(cksum "$global_agents")"
+assert_fails run_install
+[ "$before" = "$(cksum "$global_agents")" ] || fail "duplicate markers changed AGENTS.md"
+
+# CRLF in unrelated content is preserved byte-for-byte.
+printf '# Personal rules\r\nKeep CRLF\r\n' > "$global_agents"
+run_install
+python3 - "$global_agents" <<'PY'
+import sys
+data = open(sys.argv[1], 'rb').read()
+assert b'# Personal rules\r\nKeep CRLF\r\n' in data
+PY
+
+# A symlinked global policy is never replaced.
+symlink_target="$tmp_home/.codex/real-AGENTS.md"
+printf '%s\n' '# preserve me' > "$symlink_target"
+rm -f "$global_agents"
+ln -s "$symlink_target" "$global_agents"
+before="$(cksum "$symlink_target")"
+assert_fails run_install
+[ -L "$global_agents" ] || fail "symlink was replaced"
+[ "$before" = "$(cksum "$symlink_target")" ] || fail "symlink target changed"
+rm "$global_agents"
+
+# Reinstall removes stale files from an allowlisted Codex skill directory.
+run_install
+printf '%s\n' stale > "$tmp_home/.codex/skills/build-mode/stale.md"
+run_install
+[ ! -e "$tmp_home/.codex/skills/build-mode/stale.md" ] || fail "stale managed skill file survived reinstall"
 
 printf '%s\n' '# Personal rules' \
   '<!-- j-stack:codex-global-policy:start version=0 -->' \
