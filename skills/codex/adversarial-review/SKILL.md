@@ -17,4 +17,7 @@ severity, and a recommended disposition. If fresh-context review is not
 available, report that limitation rather than silently reviewing from the
 current context. Do not create persistent independent-review artifacts
 automatically; the primary session owns accepted decisions and writes them to
-`.planning/`. Do not use credential-based external calls or paid API calls.
+`.planning/`. Do not make API calls of any kind (all API calls are prohibited),
+use the Claude CLI, use credential-based external calls, or use paid API calls.
+If the native capability is unavailable,
+report that limitation rather than substituting any of those paths.

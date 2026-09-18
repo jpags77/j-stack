@@ -20,4 +20,6 @@ arrays allowed to be empty): `schema`, `repository_state`, `iteration`,
 `phase`, `claims`, `decisions`, `conflicts`, `open_questions`, `next_actions`,
 `touched_artifacts`, `verification`, and `continuation_prompt`. Set `schema` to
 `j-stack.handoff.blackboard.v1` and preserve the same complete shape on every
-snapshot.
+snapshot. Start from the bundled [`templates/blackboard.json`](templates/blackboard.json),
+which shows the nested `claim`, `decision`, `conflict`, `question`, `action`,
+and `artifact` fields that keep snapshots compatible across tools.

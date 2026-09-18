@@ -17,5 +17,7 @@ idempotent. Record the initialization decision and next phase in the blackboard.
 The minimum compatible layout is `.planning/index.md`, `.planning/log.md`,
 `.planning/vision/`, `.planning/prior-art/`, `.planning/plans/`,
 `.planning/reviews/`, `.planning/stakeholder-pack/`, and
-`.planning/handoffs/`. Use markdown files with the headings and links expected
-by the repository's `AGENTS.md`; never overwrite existing files.
+`.planning/handoffs/`. Use the bundled [`templates/index.md`](templates/index.md)
+and [`templates/log.md`](templates/log.md) as concrete starting structures,
+and use [`../handoff-snapshot/templates/blackboard.json`](../handoff-snapshot/templates/blackboard.json)
+for the compatible handoff shape; never overwrite existing files.

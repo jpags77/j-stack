@@ -283,7 +283,7 @@ path, template_path, dry_run = sys.argv[1], sys.argv[2], sys.argv[3] == "true"
 start = "<!-- j-stack:codex-global-policy:start version=1 -->"
 end = "<!-- j-stack:codex-global-policy:end -->"
 marker_prefix = "<!-- j-stack:codex-global-policy:"
-valid_start_re = re.compile(r"<!-- j-stack:codex-global-policy:start version=\d+ -->")
+valid_start_re = re.compile(re.escape(start))
 
 try:
     old = open(path, encoding="utf-8", newline="").read() if os.path.exists(path) else ""
@@ -302,7 +302,7 @@ for index, line in enumerate(lines):
             sys.exit(1)
         markers.append((index, marker))
 
-starts = [index for index, marker in markers if marker.startswith("<!-- j-stack:codex-global-policy:start")]
+starts = [index for index, marker in markers if marker == start]
 ends = [index for index, marker in markers if marker == end]
 if len(starts) > 1 or len(ends) > 1 or len(starts) != len(ends) or (starts and starts[0] >= ends[0]):
     print("codex global policy: malformed marker layout; expected one ordered marker pair", file=sys.stderr)

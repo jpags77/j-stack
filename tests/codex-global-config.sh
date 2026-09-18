@@ -51,6 +51,17 @@ printf '%s\n' '# Personal rules' \
   'old managed content' \
   '<!-- j-stack:codex-global-policy:end -->' > "$global_agents"
 
+before="$(cksum "$global_agents")"
+assert_fails run_install
+[ "$before" = "$(cksum "$global_agents")" ] || fail "unsupported marker version changed AGENTS.md"
+assert_contains "$global_agents" "version=0"
+
+printf '%s\n' '# Personal rules' \
+  'Always use my preferred formatter.' \
+  '<!-- j-stack:codex-global-policy:start version=1 -->' \
+  'old managed content' \
+  '<!-- j-stack:codex-global-policy:end -->' > "$global_agents"
+
 run_install
 assert_contains "$global_agents" "# Personal rules"
 assert_contains "$global_agents" "Always use my preferred formatter."
@@ -127,7 +138,7 @@ run_install
 [ ! -e "$tmp_home/.codex/skills/build-mode/stale.md" ] || fail "stale managed skill file survived reinstall"
 
 printf '%s\n' '# Personal rules' \
-  '<!-- j-stack:codex-global-policy:start version=0 -->' \
+  '<!-- j-stack:codex-global-policy:start version=1 -->' \
   'old managed content' \
   '<!-- j-stack:codex-global-policy:end -->' > "$global_agents"
 printf '%s\n' '# Existing project instructions' > "$tmp_target/AGENTS.md"

@@ -52,14 +52,28 @@ assert_contains "${ROOT}/templates/codex-role.md" "Direct runtime mode"
 assert_contains "${ROOT}/skills/codex/adversarial-review/SKILL.md" "fresh-context"
 assert_contains "${ROOT}/skills/codex/adversarial-review/SKILL.md" "challenge rubric"
 assert_contains "${ROOT}/skills/codex/adversarial-review/SKILL.md" "paid API calls"
+assert_contains "${ROOT}/skills/codex/adversarial-review/SKILL.md" "all API calls"
+assert_contains "${ROOT}/skills/codex/adversarial-review/SKILL.md" "Claude CLI"
 assert_contains "${ROOT}/skills/codex/adversarial-review/SKILL.md" 'fork_turns: "none"'
 assert_contains "${ROOT}/skills/codex/adversarial-review/SKILL.md" "gpt-5.6-sol"
 assert_contains "${ROOT}/skills/codex/adversarial-review/SKILL.md" "high"
 assert_contains "${ROOT}/skills/codex/adversarial-review/SKILL.md" "named artifact"
 assert_contains "${ROOT}/skills/codex/poc-wiki-init/SKILL.md" ".planning/index.md"
 assert_contains "${ROOT}/skills/codex/poc-wiki-init/SKILL.md" ".planning/log.md"
+assert_contains "${ROOT}/skills/codex/poc-wiki-init/SKILL.md" "templates/index.md"
+assert_contains "${ROOT}/skills/codex/poc-wiki-init/SKILL.md" "templates/log.md"
+assert_contains "${ROOT}/skills/codex/poc-wiki-init/templates/index.md" "## Current State"
+assert_contains "${ROOT}/skills/codex/poc-wiki-init/templates/log.md" "## [YYYY-MM-DD"
 assert_contains "${ROOT}/skills/codex/handoff-snapshot/SKILL.md" "j-stack.handoff.blackboard.v1"
 assert_contains "${ROOT}/skills/codex/handoff-snapshot/SKILL.md" "repository_state"
+assert_contains "${ROOT}/skills/codex/handoff-snapshot/SKILL.md" "templates/blackboard.json"
+assert_contains "${ROOT}/skills/codex/handoff-snapshot/templates/blackboard.json" '"claims"'
+assert_contains "${ROOT}/skills/codex/handoff-snapshot/templates/blackboard.json" '"claim"'
+assert_contains "${ROOT}/skills/codex/handoff-snapshot/templates/blackboard.json" '"decision"'
+assert_contains "${ROOT}/skills/codex/handoff-snapshot/templates/blackboard.json" '"conflict"'
+assert_contains "${ROOT}/skills/codex/handoff-snapshot/templates/blackboard.json" '"question"'
+assert_contains "${ROOT}/skills/codex/handoff-snapshot/templates/blackboard.json" '"action"'
+assert_contains "${ROOT}/skills/codex/handoff-snapshot/templates/blackboard.json" '"artifact"'
 assert_contains "${ROOT}/skills/codex/stakeholder-pack/SKILL.md" "optional"
 assert_contains "${ROOT}/skills/codex/build-mode/SKILL.md" "j-stack-governed"
 assert_contains "${ROOT}/skills/codex/build-mode/SKILL.md" "workflow does not apply"
