@@ -33,4 +33,4 @@ The real `~/.codex` installer was not run. The handoff snapshot records the user
 
 Prior checkpoint: `13032dd docs: record Codex global runtime safety checkpoint`.
 
-Commit chain: `13032dd` checkpoint, `2f7c0ee` safety documentation, `eeab253` finalized report/handoff metadata, and `f3ad610` exact static safety assertions. A final metadata correction commit follows.
+Commit chain: `13032dd` checkpoint, `2f7c0ee` safety documentation, `eeab253` finalized report/handoff metadata, `f3ad610` exact static safety assertions, and `53a5cb1` corrected checkpoint evidence.

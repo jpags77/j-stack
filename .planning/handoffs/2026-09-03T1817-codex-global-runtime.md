@@ -31,7 +31,7 @@ The integration test exercised temporary-`HOME` append, replacement, idempotency
 - `2f7c0ee docs: document Codex global safety boundary` (amended fix commit; README safety boundary and static assertions).
 - `eeab253 docs: finalize Codex runtime checkpoint`
 - `f3ad610 test: assert Codex safety documentation wording`
-- Final metadata correction commit follows.
+- `53a5cb1 docs: correct Codex checkpoint evidence`
 
 ## Safety boundary and next action
 
