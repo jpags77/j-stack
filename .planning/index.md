@@ -62,4 +62,5 @@ Which phase steps have run in the **current** iteration. Reset all to ⬜ when t
 - [2026-07-10T1803-snapshot.md](handoffs/2026-07-10T1803-snapshot.md) — self-audit findings: 10 furthering ideas + 10 redundancies/inconsistencies to prune, 18 prioritized next actions (N1-N18), none implemented yet
 - [2026-07-19T1707-codex-checkpoint.md](handoffs/2026-07-19T1707-codex-checkpoint.md) — Codex sync checkpoint: latest WIP verified, stale Codex config test fixed, cached gstack pin enforcement tightened, tests passing
 - [2026-07-19T1715-codex-runtime.md](handoffs/2026-07-19T1715-codex-runtime.md) — Codex runtime split: `install.sh --codex-only`, separate-runtime docs/templates/tests, local Codex/Superpowers presence confirmed
+- [2026-09-18T0000-codex-global-installed.md](handoffs/2026-09-18T0000-codex-global-installed.md) — global Codex policy and native skills installed after reviewed dry run and full verification
 - [2026-09-03T1817-codex-global-runtime.md](handoffs/2026-09-03T1817-codex-global-runtime.md) — Codex global runtime checkpoint: tests and dry-run safety verified; real `~/.codex` installation awaits explicit user command
