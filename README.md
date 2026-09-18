@@ -66,7 +66,7 @@ Together these aren't features — they're **a baseline of agentic coding discip
 | `/design-html` | Takes a mockup or design direction and converts it to production-quality HTML/CSS. | The execution skill for UI work. Pairs with `/design-shotgun` — explore, then build. |
 | `/design-review` | Audits the implemented UI against design principles: consistency, hierarchy, accessibility basics. | Closes the loop on UI work after `/design-html`. Catches regressions before the demo. |
 | `/cso` | Chief Security Officer mode. OWASP Top 10 + STRIDE analysis with findings by severity. | Security exploit reasoning is high-judgment work — Opus. Runs before DEFEND so the stakeholder pack has a real security section. |
-| `/codex` | Orchestrates a shell-out to OpenAI Codex CLI. | Used internally by the `second-opinion` custom skill for cross-vendor review. Not invoked directly. |
+| `/codex` | (Claude runtime) Orchestrates a shell-out to OpenAI Codex CLI. | Used internally by the Claude-only `second-opinion` custom skill; not part of the native Codex global skill set. |
 | `/document-release` | Reads the diff and updates docs to match. | No manual documentation sprint at the end. Docs are a diff operation, not a writing assignment. |
 
 **Safety — Haiku (mechanical)**
@@ -102,10 +102,10 @@ The output isn't just research — it becomes the "what else did you consider" s
 
 | Skill | What it does |
 |-------|-------------|
-| `session-start` | Session orientation ritual. Run at the start of every session — reads wiki state, confirms fidelity target, surfaces scope changes, handles iteration bumps, and declares the session goal before any work begins. Prevents silent drift between sessions. |
+| `build-mode` | Session orientation ritual. Run at the start of every session — reads wiki state, confirms fidelity target, surfaces scope changes, handles iteration bumps, and declares the session goal before any work begins. Prevents silent drift between sessions. |
 | `poc-wiki-init` | Bootstraps the `.planning/` wiki at project start. Asks the fidelity target question upfront, generates schema files for Claude Code, Codex, Cursor, and ChatGPT. Idempotent — safe to run again. |
 | `handoff-snapshot` | Writes a timestamped blackboard snapshot to `.planning/handoffs/` with typed state, claims, provenance, conflicts, decisions, next steps, touched artifacts, and a paste-ready continuation prompt for the next tool. |
-| `second-opinion` | Dispatches an artifact to Codex CLI for independent review, then synthesizes a convergence/divergence matrix. Two AI vendors reviewing the same artifact independently. |
+| `second-opinion` | (Claude runtime) Dispatches an artifact to Codex CLI for independent review, then synthesizes a convergence/divergence matrix. |
 | `stakeholder-pack` | Aggregates vision, prior-art, security, and cross-model review outputs into a single executive-ready document. Pre-answers the five standard enterprise PoC questions. |
 
 ---
@@ -135,7 +135,7 @@ When Anthropic limits hit mid-engagement — and they will — `handoff-snapshot
 
 After significant code interactions, j-stack also treats commit + wiki update + handoff as the durable checkpoint. Local commits are appropriate once the diff is coherent; GitHub pushes are intentionally explicit and should happen only when the user asks or when a publish workflow is active.
 
-**Headroom** is the third defense — context compression at named pipeline checkpoints. Large tool outputs (wiki reads at session-start, prior-art scout returns, BUILD subagent transcripts, large file reads) are compressed before reasoning over them. The compressed form stays in context; the original is retrievable by hash if a specific detail is needed. Zero change to the workflow, measurable reduction in tokens-per-session.
+**Headroom** is the third defense — context compression at named pipeline checkpoints. Large tool outputs (wiki reads at build-mode, prior-art scout returns, BUILD subagent transcripts, large file reads) are compressed before reasoning over them. The compressed form stays in context; the original is retrievable by hash if a specific detail is needed. Zero change to the workflow, measurable reduction in tokens-per-session.
 
 ---
 
@@ -155,15 +155,15 @@ EXPAND → REFINE → SURVEY → PLAN → BUILD → POLISH → DEFEND → HANDOF
 | **Plan** | `writing-plans` (SP), `ponytail-review spec` | Full implementation spec, Opus-reviewed. Ponytail reviews the spec for YAGNI before BUILD starts — catch bloat before tokens are spent generating it. |
 | **Build** | `subagent-driven-dev` (SP), `/design-shotgun`, `/design-html` | TDD execution. Parallel subagents in isolated worktrees, implementing against the spec. |
 | **Polish** | `/qa`, `/design-review`, `/cso` | Audit against spec, design review, OWASP/STRIDE security analysis. |
-| **Defend** | `second-opinion`, `stakeholder-pack` | Codex independently reviews Claude's output. Findings synthesized. Stakeholder pack assembled. |
+| **Defend (Claude runtime)** | `second-opinion`, `stakeholder-pack` | An independent Codex CLI review is synthesized with the primary review. |
 | **Handoff** | `/document-release`, `handoff-snapshot` | Docs generated from diff. Wiki snapshot written for cross-tool resumption. |
 
 ### Complete skill flow
 
-Every session enters through `session-start`, which reads wiki state and dispatches to the correct phase automatically.
+Every session enters through `build-mode`, which reads wiki state and dispatches to the correct phase automatically.
 
 ```
-session-start  [custom · sonnet]  ← fires automatically at session start (hook)
+build-mode  [custom · sonnet]  ← fires automatically when .planning/ exists (hook)
 │
 ├── if no .planning/ wiki → poc-wiki-init  [custom · haiku]
 │     ├── asks fidelity target (working PoC / polished demo / MVP)
@@ -199,14 +199,14 @@ BUILD
   /design-shotgun  [gstack · sonnet]  ← UI: explore directions
   /design-html     [gstack · sonnet]  ← UI: execute direction
 
-POLISH  (session-start checks log.md and dispatches to first pending)
+POLISH  (build-mode checks log.md and dispatches to first pending)
   /qa             [gstack · sonnet]
   /design-review  [gstack · sonnet]
   /cso            [gstack · opus]
 
 DEFEND
-  second-opinion   [custom · opus]
-  └── /codex  [gstack · sonnet]  ← shells out to OpenAI Codex CLI
+  second-opinion   [Claude-only custom · opus]
+  └── /codex  [Claude runtime gstack · sonnet]  ← shells out to OpenAI Codex CLI
   stakeholder-pack [custom · opus]
 
 HANDOFF
@@ -245,7 +245,7 @@ j-stack produces artifacts that answer these before the meeting:
 | What else did you consider? | `prior-art-survey` output (OSS, libraries, patterns) |
 | Is it secure? | `/cso` OWASP/STRIDE security review |
 | Does it actually work? | `/qa` audit against spec + TDD test suite |
-| Why should I trust one AI vendor? | `second-opinion` cross-vendor convergence matrix |
+| Why should I trust one AI vendor? | `second-opinion` cross-vendor convergence matrix (Claude runtime) |
 
 All five are assembled by `stakeholder-pack` into a single document before the demo. The meeting shifts from "defend the work" to "discuss what's next."
 
@@ -265,8 +265,9 @@ All five are assembled by `stakeholder-pack` into a single document before the d
 
 **Codex runtime:**
 
-- [OpenAI Codex CLI](https://github.com/openai/codex) installed and authenticated (for `second-opinion`)
+- [OpenAI Codex](https://github.com/openai/codex) available for the active session
 - `AGENTS.md` in the target repo with the j-stack Codex runtime mapping (installed by `bash install.sh --codex-only`, or by the default installer)
+- Optional global Codex policy and native skills: `bash install.sh --codex-only --codex-global`
 - GitHub access for the repo: a configured `origin` remote, authenticated `git` push rights, and optionally the GitHub CLI or Codex GitHub connector for PR/issue context
 - git, bash, python3, standard Unix tools
 
@@ -280,13 +281,15 @@ bash install.sh
 
 ```bash
 bash install.sh --codex-only    # only configure the Codex runtime (AGENTS.md + Codex check)
-bash install.sh --skip-codex    # skip Codex CLI check (if not using second-opinion)
+bash install.sh --skip-codex    # skip the Codex CLI check for Claude-only installs
 bash install.sh --skip-verify   # skip post-install verification
 ```
 
-The default script clones gstack, copies 11 cherry-picked skills into `~/.claude/skills/` with model directives injected, installs the 5 custom skills plus the bundled `prior-art-survey` (all from `skills/` files in this repo), installs the three scout agents into `~/.claude/agents/` (pinned to `model: sonnet`, honored by the Agent tool at dispatch), writes the project `CLAUDE.md` and `AGENTS.md` lane configuration, and merges a `SessionStart` hook into `~/.claude/settings.json` so `session-start` fires automatically (see [Manual hook setup](#manual-hook-setup) if you don't have `python3`).
+The default script clones gstack, copies 11 cherry-picked skills into `~/.claude/skills/` with model directives injected, installs the 5 custom skills plus the bundled `prior-art-survey` (all from `skills/` files in this repo), installs the three scout agents into `~/.claude/agents/` (pinned to `model: sonnet`, honored by the Agent tool at dispatch), writes the project `CLAUDE.md` and `AGENTS.md` lane configuration, and merges a `SessionStart` hook into `~/.claude/settings.json` so `build-mode` fires automatically (see [Manual hook setup](#manual-hook-setup) if you don't have `python3`).
 
-`--codex-only` skips Claude CLI/plugin/skill/agent/hook installation. It checks for the Codex CLI, writes the project `AGENTS.md` runtime mapping, and verifies the Codex surface. Use it when the repo should be workable from Codex without installing the Claude skill host on that machine.
+`--codex-only` skips the other runtime's CLI/plugin/skill/agent/hook installation. It checks for the Codex CLI, writes the project `AGENTS.md` runtime mapping, and verifies the Codex surface. Add `--codex-global` to install the opt-in global policy and the six native skills (`build-mode`, `poc-wiki-init`, `handoff-snapshot`, `prior-art-survey`, `stakeholder-pack`, and `adversarial-review`) under `~/.codex/`.
+
+For a safe global-policy preview, run `bash install.sh --codex-only --codex-global --dry-run`. The dry run prints the proposed diff and writes nothing. Before any real `~/.codex` install, run the temporary-HOME tests (`bash tests/codex-global-config.sh` and `bash tests/codex-config.sh`), review the dry-run output, and then explicitly authorize the real command. The managed marker block is the only content j-stack owns: an existing valid block is replaced in place while unrelated instructions and file permissions are preserved; malformed or duplicate markers fail without mutation.
 
 ### Manual hook setup
 
@@ -300,7 +303,7 @@ The default script clones gstack, copies 11 cherry-picked skills into `~/.claude
         "hooks": [
           {
             "type": "command",
-            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"MANDATORY j-stack: Invoke the session-start skill immediately before any development work (coding, planning, design, or file changes). Skip only for pure Q&A that produces no artifacts. Do not wait for user instruction — run it now.\"}}'",
+            "command": "~/.claude/hooks/build-mode-gate.sh",
             "statusMessage": "Loading j-stack session context..."
           }
         ]
@@ -310,7 +313,7 @@ The default script clones gstack, copies 11 cherry-picked skills into `~/.claude
 }
 ```
 
-Without the hook, j-stack still works — the global `~/.claude/CLAUDE.md` instructs Claude to run `session-start` at the top of every session — but the hook makes it deterministic rather than relying on the model honoring the instruction.
+Without the hook, j-stack still works — run `/build-mode` yourself — but the hook makes it deterministic rather than relying on the model honoring an instruction. The script stays silent unless the project has a `.planning/` wiki, so non-engagement sessions pay no context cost.
 
 ### GitHub integration
 
@@ -335,11 +338,12 @@ Codex should prefer the GitHub connector for repository, issue, and pull request
 
 ### Codex runtime
 
-j-stack treats Codex as a separate runtime through `AGENTS.md` and the `.planning/` wiki. Claude remains the primary skill host for Claude slash commands and plugin execution; Codex runs the same process directly from repo instructions and durable planning state.
+j-stack treats Codex as a separate runtime through `AGENTS.md` and the `.planning/` wiki. Codex runs the same process directly from repo instructions and durable planning state, with its native skills installed only when explicitly requested.
 
 - **Direct runtime mode:** open the repo in Codex intentionally. Codex reads `AGENTS.md`, `.planning/index.md`, `.planning/log.md`, and the latest `.planning/handoffs/` snapshot, then continues the current phase.
 - **Fallback mode:** when Claude usage limits hit, open the repo in Codex and resume from the same `.planning/` state.
-- **Review mode:** `second-opinion` uses Codex as the independent reviewer for a spec, diff, or architecture decision. Codex should return review-ready findings that can be filed under `.planning/reviews/`.
+- **Review mode:** `adversarial-review` uses an isolated fresh-context reviewer when available for a spec, diff, or architecture decision. It returns prioritized findings to the primary session, which decides what belongs in `.planning/`.
+- `adversarial-review` uses the native isolated review capability when available and requires no API key or paid API; if that capability is unavailable, it reports the limitation rather than falling back to an external API.
 
 Codex does not need to run Claude slash commands directly. `AGENTS.md` maps those commands to equivalent Codex behavior while preserving the same phase order and wiki write-back rules.
 
@@ -347,18 +351,20 @@ To configure only this runtime in a repo:
 
 ```bash
 bash install.sh --codex-only
+# Optional global policy + Codex-native skills:
+bash install.sh --codex-only --codex-global
 ```
 
 Then start Codex in the repo. There is no Claude-style `SessionStart` hook for Codex in this stack today; the bootstrap contract is explicit: read `AGENTS.md`, then `.planning/index.md`, `.planning/log.md`, and the latest `.planning/handoffs/` snapshot before non-trivial work.
 
 ### Starting a new PoC or improving an existing repo
 
-`session-start` fires automatically at session start (via the `SessionStart` hook `install.sh` merges into `~/.claude/settings.json` — see [Manual hook setup](#manual-hook-setup) for the no-`python3` fallback). You don't run it manually.
+`build-mode` fires automatically at session start (via the `SessionStart` hook `install.sh` merges into `~/.claude/settings.json` — see [Manual hook setup](#manual-hook-setup) for the no-`python3` fallback). You don't run it manually.
 
 **First session on a new project:**
 ```
 1. Open Claude Code in your project directory
-2. session-start fires automatically
+2. build-mode fires automatically
    ├── bootstraps .planning/ wiki (asks fidelity target)
    └── dispatches to /office-hours to begin EXPAND
 3. Pipeline runs phase by phase from there
@@ -367,7 +373,7 @@ Then start Codex in the repo. There is no Claude-style `SessionStart` hook for C
 **First session on an existing repo:**
 ```
 1. Open Claude Code in the repo
-2. session-start fires automatically
+2. build-mode fires automatically
    ├── bootstraps .planning/ wiki
    ├── asks: goal, constraints, definition of done, prior docs
    └── dispatches to the right phase based on your answers
@@ -376,7 +382,7 @@ Then start Codex in the repo. There is no Claude-style `SessionStart` hook for C
 
 **Every subsequent session:**
 ```
-1. session-start fires automatically
+1. build-mode fires automatically
    ├── reads wiki: iteration / phase / fidelity / open items
    ├── confirms scope: "anything changed since last session?"
    ├── confirms fidelity target

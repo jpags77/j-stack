@@ -5,7 +5,7 @@
 #   + Claude CLAUDE.md lane config + Codex AGENTS.md runtime config
 #   + Claude SessionStart hook
 #
-# Usage: bash install.sh [--codex-only] [--skip-codex] [--skip-verify] [--update]
+# Usage: bash install.sh [--codex-only] [--codex-global] [--dry-run] [--skip-codex] [--skip-verify] [--update]
 
 set -euo pipefail
 
@@ -13,12 +13,18 @@ SKIP_CODEX=false
 SKIP_VERIFY=false
 UPDATE_GSTACK=false
 CODEX_ONLY=false
+CODEX_GLOBAL=false
+DRY_RUN=false
+CODEX_SKILLS=(build-mode poc-wiki-init handoff-snapshot prior-art-survey stakeholder-pack adversarial-review)
 for arg in "$@"; do
   case $arg in
     --codex-only)  CODEX_ONLY=true ;;
+    --codex-global) CODEX_GLOBAL=true ;;
+    --dry-run)     DRY_RUN=true ;;
     --skip-codex)  SKIP_CODEX=true ;;
     --skip-verify) SKIP_VERIFY=true ;;
     --update)      UPDATE_GSTACK=true ;;
+    *)             echo "[error] Unknown option: ${arg}" >&2; exit 1 ;;
   esac
 done
 
@@ -27,6 +33,10 @@ info()  { echo -e "${GREEN}[j-stack]${NC} $*"; }
 warn()  { echo -e "${YELLOW}[warn]${NC} $*"; }
 error() { echo -e "${RED}[error]${NC} $*" >&2; }
 halt()  { error "$*"; exit 1; }
+
+if [ "$DRY_RUN" = true ] && { [ "$CODEX_ONLY" = false ] || [ "$CODEX_GLOBAL" = false ]; }; then
+  halt "--dry-run requires both --codex-only and --codex-global."
+fi
 
 SKILLS_DIR="${HOME}/.claude/skills"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -59,7 +69,7 @@ fi
 
 # ─── Phase 0.5: Codex CLI ─────────────────────────────────────────────────────
 
-if [ "$SKIP_CODEX" = false ]; then
+if [ "$SKIP_CODEX" = false ] && [ "$CODEX_GLOBAL" = false ]; then
   info "Phase 0 — Codex CLI setup…"
   if command -v codex &>/dev/null; then
     CODEX_VER=$(codex --version 2>/dev/null || echo "unknown")
@@ -174,7 +184,7 @@ done
 # ─── Phase 2: Custom skills ────────────────────────────────────────────────────────────────────────────
 
 info "Phase 2 — Installing custom skills…"
-CUSTOM_SKILLS=(poc-wiki-init handoff-snapshot second-opinion stakeholder-pack session-start)
+CUSTOM_SKILLS=(poc-wiki-init handoff-snapshot second-opinion stakeholder-pack build-mode)
 
 for skill in "${CUSTOM_SKILLS[@]}"; do
   src="${SCRIPT_DIR}/skills/${skill}"
@@ -253,6 +263,115 @@ ${CODEX_ROLE}"
 AGENTS_CODEX_APPEND="$CODEX_ROLE"
 
 PROJECT_AGENTS="${PWD}/AGENTS.md"
+
+# ─── Phase 3.2: Codex global policy ──────────────────────────────────────────
+
+if [ "$CODEX_GLOBAL" = true ]; then
+  info "Phase 3.2 — Configuring global Codex policy…"
+  CODEX_GLOBAL_AGENTS="${HOME}/.codex/AGENTS.md"
+  CODEX_GLOBAL_TEMPLATE="${SCRIPT_DIR}/templates/codex-global-policy.md"
+  PYTHONDONTWRITEBYTECODE=1 python3 - "$CODEX_GLOBAL_AGENTS" "$CODEX_GLOBAL_TEMPLATE" "$DRY_RUN" <<'PYEOF'
+import difflib
+import os
+import re
+import shutil
+import stat
+import sys
+import tempfile
+
+path, template_path, dry_run = sys.argv[1], sys.argv[2], sys.argv[3] == "true"
+start = "<!-- j-stack:codex-global-policy:start version=1 -->"
+end = "<!-- j-stack:codex-global-policy:end -->"
+marker_prefix = "<!-- j-stack:codex-global-policy:"
+valid_start_re = re.compile(re.escape(start))
+
+try:
+    old = open(path, encoding="utf-8", newline="").read() if os.path.exists(path) else ""
+    template = open(template_path, encoding="utf-8", newline="").read().rstrip("\r\n")
+except OSError as exc:
+    print(f"codex global policy: {exc}", file=sys.stderr)
+    sys.exit(1)
+
+lines = old.splitlines(keepends=True)
+markers = []
+for index, line in enumerate(lines):
+    if marker_prefix in line:
+        marker = line.strip()
+        if marker != end and not valid_start_re.fullmatch(marker):
+            print("codex global policy: malformed marker line; repair AGENTS.md manually", file=sys.stderr)
+            sys.exit(1)
+        markers.append((index, marker))
+
+starts = [index for index, marker in markers if marker == start]
+ends = [index for index, marker in markers if marker == end]
+if len(starts) > 1 or len(ends) > 1 or len(starts) != len(ends) or (starts and starts[0] >= ends[0]):
+    print("codex global policy: malformed marker layout; expected one ordered marker pair", file=sys.stderr)
+    sys.exit(1)
+
+line_ending = "\r\n" if "\r\n" in old else "\n"
+template = template.replace("\r\n", "\n").replace("\n", line_ending)
+block = f"{start}{line_ending}{template}{line_ending}{end}{line_ending}"
+if not starts:
+    prefix = old if not old or old.endswith(("\n", "\r")) else old + line_ending
+    new = prefix + block
+else:
+    new = "".join(lines[:starts[0]]) + block + "".join(lines[ends[0] + 1:])
+
+if dry_run:
+    sys.stdout.writelines(difflib.unified_diff(old.splitlines(keepends=True), new.splitlines(keepends=True),
+                                               fromfile=path, tofile=path))
+    sys.exit(0)
+
+mode = stat.S_IMODE(os.stat(path).st_mode) if os.path.exists(path) else 0o644
+directory = os.path.dirname(path) or "."
+if os.path.lexists(path) and os.path.islink(path):
+    print("codex global policy: refusing to replace symlinked AGENTS.md; repair the symlink and rerun", file=sys.stderr)
+    sys.exit(1)
+os.makedirs(directory, exist_ok=True)
+fd, temporary = tempfile.mkstemp(prefix=".codex-global-policy.", dir=directory)
+try:
+    os.fchmod(fd, mode)
+    with os.fdopen(fd, "w", encoding="utf-8", newline="") as output:
+        output.write(new)
+    if os.path.exists(path):
+        shutil.copystat(path, temporary, follow_symlinks=False)
+    os.replace(temporary, path)
+except Exception:
+    try:
+        os.unlink(temporary)
+    except OSError:
+        pass
+    raise
+print(f"codex global policy: {'updated' if starts else 'installed'} {path}")
+PYEOF
+
+fi
+
+if [ "$DRY_RUN" = true ]; then
+  exit 0
+fi
+
+if [ "$CODEX_GLOBAL" = true ]; then
+  CODEX_SKILLS_DIR="${HOME}/.codex/skills"
+  for skill in "${CODEX_SKILLS[@]}"; do
+    src="${SCRIPT_DIR}/skills/codex/${skill}"
+    if [ ! -d "$src" ]; then
+      halt "Expected skills/codex/${skill}/ not found in repo. Clone may be incomplete."
+    fi
+  done
+  mkdir -p "$CODEX_SKILLS_DIR"
+  for skill in "${CODEX_SKILLS[@]}"; do
+    target="${CODEX_SKILLS_DIR}/${skill}"
+    case "$target" in
+      "${CODEX_SKILLS_DIR}"/*) ;;
+      *) halt "Refusing to remove Codex skill outside allowlisted directory: ${target}" ;;
+    esac
+    rm -rf -- "$target"
+    cp -r "${SCRIPT_DIR}/skills/codex/${skill}" "$CODEX_SKILLS_DIR/"
+    info "  Installed Codex skill: ${skill}"
+  done
+fi
+
 if [ -f "$PROJECT_AGENTS" ]; then
   if grep -q "Codex role" "$PROJECT_AGENTS"; then
     info "  AGENTS.md already contains Codex lane configuration — skipping"
@@ -274,24 +393,25 @@ if [ "$CODEX_ONLY" = false ]; then
 
 info "Phase 3.6 — Installing SessionStart hook…"
 
+# The hook is a gating script: it stays silent unless the project has a .planning/
+# wiki, so Q&A and one-off sessions pay no context cost.
+mkdir -p "${HOME}/.claude/hooks"
+cp "${SCRIPT_DIR}/hooks/build-mode-gate.sh" "${HOME}/.claude/hooks/build-mode-gate.sh"
+chmod +x "${HOME}/.claude/hooks/build-mode-gate.sh"
+info "  ✓ hooks/build-mode-gate.sh"
+
 SETTINGS_JSON="${HOME}/.claude/settings.json"
-HOOK_MARKER="MANDATORY j-stack"
+HOOK_MARKER="build-mode-gate.sh"
 
 write_session_hook() {
   python3 - "$SETTINGS_JSON" <<'PYEOF'
 import json, os, sys
 
 path = sys.argv[1]
-marker = "MANDATORY j-stack"
-command = (
-    "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\","
-    "\"additionalContext\":\"MANDATORY j-stack: Invoke the session-start skill "
-    "immediately before any development work (coding, planning, design, or file "
-    "changes). Skip only for pure Q&A that produces no artifacts. Do not wait for "
-    "user instruction — run it now.\"}}'"
-)
+marker = "build-mode-gate.sh"
+command = os.path.expanduser("~/.claude/hooks/build-mode-gate.sh")
 entry = {"hooks": [{"type": "command", "command": command,
-                    "statusMessage": "Loading j-stack session context..."}]}
+                    "statusMessage": "Checking for j-stack engagement..."}]}
 
 data = {}
 if os.path.exists(path):
@@ -351,7 +471,7 @@ if [ "$SKIP_VERIFY" = false ]; then
 
   if [ "$CODEX_ONLY" = false ]; then
     # Check all skills exist
-    ALL_SKILLS=("${GSTACK_SKILLS[@]}" poc-wiki-init handoff-snapshot second-opinion stakeholder-pack session-start prior-art-survey)
+    ALL_SKILLS=("${GSTACK_SKILLS[@]}" poc-wiki-init handoff-snapshot second-opinion stakeholder-pack build-mode prior-art-survey)
     for skill in "${ALL_SKILLS[@]}"; do
       if [ -d "${SKILLS_DIR}/${skill}" ]; then
         info "  ✓ ${skill}"
@@ -408,12 +528,12 @@ if [ "$CODEX_ONLY" = true ]; then
   echo "  4. Keep .planning/ and local commits as the durable handoff surface"
 else
   echo "  1. Open a new Claude Code session in your project directory"
-  echo "  2. session-start fires automatically (SessionStart hook) — it orients,"
-  echo "     or bootstraps the .planning/ wiki on first run for this project"
+  echo "  2. build-mode fires automatically (SessionStart hook) for projects that"
+  echo "     already have .planning/; run /build-mode by hand to start a new one"
   echo "  3. It dispatches to /office-hours to begin EXPAND (founder-lens scoping)"
-  echo "  4. Follow the pipeline in ~/.claude/CLAUDE.md"
+  echo "  4. Follow the pipeline in the build-mode skill"
 fi
 echo ""
-echo "Each session: session-start → confirm fidelity → confirm phase → do work → handoff-snapshot (if switching tools)"
+echo "Each session: build-mode → confirm fidelity → confirm phase → do work → handoff-snapshot (if switching tools)"
 echo "Pipeline:     EXPAND → REFINE → SURVEY → PLAN → BUILD → POLISH → DEFEND → HANDOFF"
 echo ""

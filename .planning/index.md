@@ -8,7 +8,7 @@ One-line summary of every page in this wiki. Update on every page creation.
 **Phase:** BUILD (maintenance) — this is j-stack's own repo under continuous self-improvement, not a single EXPAND→HANDOFF pass. Engagement Context below is the standing spec; the 2026-07-10 self-audit backlog (handoffs/2026-07-10T1803-snapshot.md, N1-N18) is the current unit of work.
 **Fidelity target:** C — MVP (production-ready Claude Code skill stack)
 **Prior-art:** ⬜ pending — the original pipeline design predates prior-art-survey's existence and was never run against it; genuinely outstanding, not just stale bookkeeping.
-**Last updated:** 2026-07-19T17:15:12Z
+**Last updated:** 2026-09-03T18:17:00Z
 
 ## Iteration Progress
 
@@ -43,6 +43,8 @@ Which phase steps have run in the **current** iteration. Reset all to ⬜ when t
 - [ponytail-integration.md](vision/ponytail-integration.md) — ponytail plugin integration: plan-gate decision, full level, audit findings, /goal and auto-research context
 - [graphify-integration.md](vision/graphify-integration.md) — graphify on-demand knowledge graph: session-start detection, existing-repo use case, wiki convention
 - [headroom-integration.md](vision/headroom-integration.md) — headroom context compression: global triggers + j-stack pipeline checkpoints
+- [codex-global-runtime.md](vision/codex-global-runtime.md) — approved design for opt-in global Codex policy, Codex-native skills, and fresh-context adversarial review
+- [codex-global-runtime checkpoint](../.superpowers/sdd/2026-09-03-codex-native-runtime/task-3-report.md) — implementation verified; real `~/.codex` installation remains explicitly user-controlled
 
 ## prior-art/
 (empty — populate after prior-art-survey)
@@ -60,3 +62,5 @@ Which phase steps have run in the **current** iteration. Reset all to ⬜ when t
 - [2026-07-10T1803-snapshot.md](handoffs/2026-07-10T1803-snapshot.md) — self-audit findings: 10 furthering ideas + 10 redundancies/inconsistencies to prune, 18 prioritized next actions (N1-N18), none implemented yet
 - [2026-07-19T1707-codex-checkpoint.md](handoffs/2026-07-19T1707-codex-checkpoint.md) — Codex sync checkpoint: latest WIP verified, stale Codex config test fixed, cached gstack pin enforcement tightened, tests passing
 - [2026-07-19T1715-codex-runtime.md](handoffs/2026-07-19T1715-codex-runtime.md) — Codex runtime split: `install.sh --codex-only`, separate-runtime docs/templates/tests, local Codex/Superpowers presence confirmed
+- [2026-09-18T0000-codex-global-installed.md](handoffs/2026-09-18T0000-codex-global-installed.md) — global Codex policy and native skills installed after reviewed dry run and full verification
+- [2026-09-03T1817-codex-global-runtime.md](handoffs/2026-09-03T1817-codex-global-runtime.md) — Codex global runtime checkpoint: tests and dry-run safety verified; real `~/.codex` installation awaits explicit user command

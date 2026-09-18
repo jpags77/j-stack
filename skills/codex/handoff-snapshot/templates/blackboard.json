@@ -1,0 +1,55 @@
+{
+  "schema": "j-stack.handoff.blackboard.v1",
+  "repository_state": {
+    "root": "<absolute repository path>",
+    "branch": "<branch>",
+    "head": "<commit>",
+    "dirty": false,
+    "remote": "<remote or null>"
+  },
+  "iteration": 1,
+  "phase": "<phase>",
+  "claims": [{
+    "id": "claim-1",
+    "claim": "<fact>",
+    "status": "confirmed",
+    "confidence": "high",
+    "provenance": ["<file or command>"]
+  }],
+  "decisions": [{
+    "id": "decision-1",
+    "decision": "<decision>",
+    "rationale": "<why>",
+    "source": "<file, command, or user>"
+  }],
+  "conflicts": [{
+    "id": "conflict-1",
+    "conflict": "<disagreement>",
+    "sources": ["<source-a>", "<source-b>"],
+    "preferred_source": "<source>",
+    "reason": "<why>"
+  }],
+  "open_questions": [{
+    "id": "question-1",
+    "question": "<unresolved question>",
+    "owner": "<person or tool>",
+    "status": "open"
+  }],
+  "next_actions": [{
+    "id": "action-1",
+    "action": "<ordered next step>",
+    "priority": "high",
+    "blocked_by": []
+  }],
+  "touched_artifacts": [{
+    "path": "<repository-relative path>",
+    "artifact": "<what it contains>",
+    "change": "<created, modified, or reviewed>"
+  }],
+  "verification": [{
+    "command": "<verification command>",
+    "result": "passed",
+    "evidence": "<output or artifact>"
+  }],
+  "continuation_prompt": "<concise prompt for the next tool or session>"
+}
