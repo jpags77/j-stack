@@ -5,10 +5,10 @@ One-line summary of every page in this wiki. Update on every page creation.
 ## Current State
 
 **Iteration:** 1
-**Phase:** BUILD (maintenance) — this is j-stack's own repo under continuous self-improvement, not a single EXPAND→HANDOFF pass. Engagement Context below is the standing spec; the 2026-07-10 self-audit backlog (handoffs/2026-07-10T1803-snapshot.md, N1-N18) is the current unit of work.
+**Phase:** PLAN — runtime reliability and efficiency initiative; written plan awaiting review. The standing maintenance backlog remains historical context.
 **Fidelity target:** C — MVP (production-ready Claude Code skill stack)
-**Prior-art:** ⬜ pending — the original pipeline design predates prior-art-survey's existence and was never run against it; genuinely outstanding, not just stale bookkeeping.
-**Last updated:** 2026-09-03T18:17:00Z
+**Prior-art:** ✅ complete — scoped to runtime reliability and efficiency; HYBRID native-first approach authorized by the user's instruction to proceed. See prior-art/runtime-efficiency.md. A retrospective survey of the entire original pipeline remains outstanding.
+**Last updated:** 2026-09-20T18:07:35Z
 
 ## Iteration Progress
 
@@ -17,9 +17,9 @@ Which phase steps have run in the **current** iteration. Reset all to ⬜ when t
 - [EXPAND] office-hours — ✅  `[auto: vision/]`
 - [EXPAND] plan-ceo-review — ⬜  `[confirm]`
 - [REFINE] brainstorming — ⬜  `[confirm]`
-- [SURVEY] prior-art-survey — ⬜  `[auto: Prior-art flag above — authoritative]`
-- [PLAN] writing-plans — ✅  `[auto: plans/2026-06-17-ponytail-fixes.md]`
-- [PLAN] ponytail-review spec — ⬜  `[confirm]`
+- [SURVEY] prior-art-survey — ✅  `[scope: runtime reliability and efficiency; prior-art/runtime-efficiency.md]`
+- [PLAN] writing-plans — ✅  `[scope: plans/2026-09-20-runtime-reliability-efficiency.md; user review pending]`
+- [PLAN] ponytail-review spec — ✅  `[scope: simplification gate in runtime reliability and efficiency plan]`
 - [BUILD] subagent-driven-development — ⬜  `[auto: commits since plan]`
 - [POLISH] qa — ⬜  `[auto: reviews/qa-*]`
 - [POLISH] design-review — ⬜  `[auto: reviews/design-*]`
@@ -37,6 +37,7 @@ Which phase steps have run in the **current** iteration. Reset all to ⬜ when t
 **Prior docs:** CLAUDE.md, AGENTS.md, .planning/ wiki, skills/ and agents/ directories.
 
 ## vision/
+- [runtime-reliability-efficiency.md](vision/runtime-reliability-efficiency.md) — written design for recovery, shared evidence, proportional workflow, and measured efficiency; pending implementation-plan review
 - [understand-anything-integration.md](vision/understand-anything-integration.md) — CLOSED: Understand-Anything integration evaluated and rejected (scope mismatch)
 - [codex-integration.md](vision/codex-integration.md) — implemented design for treating Codex as a first-class fallback and review runtime via AGENTS.md + .planning/
 - [handoff-blackboard.md](vision/handoff-blackboard.md) — accepted design for structured handoff snapshots with typed state, provenance, conflicts, and checkpoint policy
@@ -47,18 +48,22 @@ Which phase steps have run in the **current** iteration. Reset all to ⬜ when t
 - [codex-global-runtime checkpoint](../.superpowers/sdd/2026-09-03-codex-native-runtime/task-3-report.md) — implementation verified; real `~/.codex` installation remains explicitly user-controlled
 
 ## prior-art/
-(empty — populate after prior-art-survey)
+- [runtime-efficiency.md](prior-art/runtime-efficiency.md) — native capabilities and reuse survey; scoped HYBRID decision, Jev advisory experiment only
+- [jev-context-compaction.md](prior-art/jev-context-compaction.md) — Jev extractive compaction survey; recommends optional experimentation plus a deterministic WIP capsule, adoption decision pending
 
 ## plans/
+- [2026-09-20-runtime-reliability-efficiency.md](plans/2026-09-20-runtime-reliability-efficiency.md) — eight core tasks with Luna ownership, interfaces, acceptance checks, token baseline, and Ponytail simplification; implementation pending review
 - [2026-06-17-ponytail-fixes.md](plans/2026-06-17-ponytail-fixes.md) — ponytail audit fixes: skill extraction, install.sh shrink (-807 lines), vanilla HTML
 
 ## reviews/
-(empty — populate after /qa, /design-review, /cso, second-opinion)
+- [2026-09-20-runtime-plan-review.md](reviews/2026-09-20-runtime-plan-review.md) — Luna review findings resolved: baseline sequencing, WIP ownership, filename collisions, and token accounting
+- [2026-09-20-j-stack-strategic-review.md](reviews/2026-09-20-j-stack-strategic-review.md) — strategic assessment: recovery within turns, shared state contracts, proportional process, acceptance evidence, and behavioral evaluation; recommendations only
 
 ## stakeholder-pack/
 (empty — populate after stakeholder-pack)
 
 ## handoffs/
+- [2026-09-20T1807-runtime-plan.md](handoffs/2026-09-20T1807-runtime-plan.md) — written plan ready for review; Luna execution retained; baseline and versioned state are first tasks
 - [2026-07-10T1803-snapshot.md](handoffs/2026-07-10T1803-snapshot.md) — self-audit findings: 10 furthering ideas + 10 redundancies/inconsistencies to prune, 18 prioritized next actions (N1-N18), none implemented yet
 - [2026-07-19T1707-codex-checkpoint.md](handoffs/2026-07-19T1707-codex-checkpoint.md) — Codex sync checkpoint: latest WIP verified, stale Codex config test fixed, cached gstack pin enforcement tightened, tests passing
 - [2026-07-19T1715-codex-runtime.md](handoffs/2026-07-19T1715-codex-runtime.md) — Codex runtime split: `install.sh --codex-only`, separate-runtime docs/templates/tests, local Codex/Superpowers presence confirmed
