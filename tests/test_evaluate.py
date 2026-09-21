@@ -147,6 +147,68 @@ class ComparisonTests(unittest.TestCase):
 
 
 class CaseAndCliTests(unittest.TestCase):
+    def evaluate_records(self, records, case_ids):
+        with tempfile.TemporaryDirectory() as temp:
+            temp = Path(temp)
+            runs = temp / "runs.jsonl"
+            cases = temp / "cases.json"
+            runs.write_text("".join(json.dumps(record) + "\n" for record in records))
+            cases.write_text(json.dumps([{"case_id": case_id} for case_id in case_ids]))
+            return evaluate_files(runs, cases)
+
+    def test_variant_coverage_must_pair_cases_before_savings_are_eligible(self):
+        report = self.evaluate_records([
+            run(run_id="b-a", case_id="a"),
+            run(run_id="b-b", case_id="b"),
+            run(run_id="c-a", case_id="a", variant="candidate"),
+        ], ["a", "b"])
+        comparison = report["comparisons"]["candidate"]
+        self.assertFalse(comparison["comparability"]["comparable"])
+        self.assertEqual(comparison["comparability"]["paired_case_count"], 1)
+        self.assertEqual(comparison["comparability"]["missing_cases"]["candidate"], ["b"])
+        self.assertFalse(comparison["savings_eligible"])
+
+    def test_root_run_count_must_match_and_repeats_report_median_and_range(self):
+        report = self.evaluate_records([
+            run(run_id="b1", input_tokens=100),
+            run(run_id="b2", input_tokens=120),
+            run(run_id="c1", variant="candidate", input_tokens=80),
+        ], ["bounded-correction"])
+        comparison = report["comparisons"]["candidate"]
+        self.assertFalse(comparison["comparability"]["comparable"])
+        self.assertEqual(comparison["comparability"]["root_run_counts"]["baseline"]["bounded-correction"], 2)
+        self.assertEqual(comparison["comparability"]["root_run_counts"]["candidate"]["bounded-correction"], 1)
+        stats = report["cases"][0]["repeat_statistics"]
+        self.assertEqual(stats["baseline"]["token_total"], {"median": 140, "range": [130, 150]})
+
+    def test_unknown_repeat_usage_keeps_repeat_statistics_unknown(self):
+        report = self.evaluate_records([
+            run(run_id="b1"), run(run_id="b2", input_tokens=None),
+        ], ["bounded-correction"])
+        self.assertIsNone(report["cases"][0]["repeat_statistics"]["baseline"]["token_total"])
+
+    def test_savings_gate_requires_known_acceptance_and_zero_unsupported_claims(self):
+        for changes, expected_reason in [
+            ({"acceptance_passed": None}, "acceptance_unknown"),
+            ({"unsupported_done_claims": 1}, "unsupported_done_claims"),
+        ]:
+            with self.subTest(changes=changes):
+                report = self.evaluate_records([
+                    run(run_id="b", **changes),
+                    run(run_id="c", variant="candidate"),
+                ], ["bounded-correction"])
+                gate = report["comparisons"]["candidate"]["quality_gate"]
+                self.assertFalse(report["comparisons"]["candidate"]["savings_eligible"])
+                self.assertIn(expected_reason, gate["reasons"])
+
+    def test_paired_complete_successful_zero_claim_comparison_is_savings_eligible(self):
+        report = self.evaluate_records([
+            run(run_id="b"), run(run_id="c", variant="candidate", input_tokens=80),
+        ], ["bounded-correction"])
+        comparison = report["comparisons"]["candidate"]
+        self.assertTrue(comparison["comparability"]["comparable"])
+        self.assertTrue(comparison["savings_eligible"])
+
     def test_case_catalog_has_eight_complete_descriptions(self):
         path = Path(__file__).resolve().parents[1] / "evals" / "cases.json"
         cases = json.loads(path.read_text())

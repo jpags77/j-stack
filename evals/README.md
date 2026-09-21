@@ -45,6 +45,22 @@ is the sum of reported per-run durations; parent and child intervals can
 overlap, so it is not necessarily elapsed task time. `usage_record_count`
 distinguishes runs contributing token usage from total `run_count`.
 
+Comparisons include `comparability`, `quality_gate`, and `savings_eligible`.
+Global comparisons are eligible only when both variants cover every case in
+the supplied catalog and have the same nonzero number of root runs per case.
+Missing cases and root-run counts are listed by variant; `unpaired_cases`
+identifies cases present on only one side. A root run (a record with no parent)
+and all of its descendants form one repeat, so aggregate parents and their
+children are not mistaken for separate repetitions. Per-case
+`repeat_statistics` reports each metric's median and `[minimum, maximum]`
+range; if any repeat's value is unknown, that metric's statistics are `null`.
+
+`savings_eligible` is false unless coverage is comparable, token usage is
+complete on both sides, both variants have known passing acceptance, and both
+report zero unsupported completion claims. Numeric deltas remain descriptive
+when this gate fails; they must not be presented as savings. This gate does not
+replace the case acceptance assertions or human review.
+
 The eight case descriptions in `cases.json` are evaluation prompts and
 acceptance contracts, not claims that any live agent has already completed
 them. Record runtime/version, model, effort, cache and usage provenance for

@@ -4,6 +4,7 @@
 import argparse
 import json
 import math
+import statistics
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -195,6 +196,102 @@ def compare(before, after):
     return result
 
 
+REPEAT_METRICS = (
+    "input_tokens", "cached_input_tokens", "uncached_input_tokens",
+    "output_tokens", "reasoning_tokens", "token_total", "wall_seconds",
+    *QUALITY_COUNTS,
+)
+
+
+def _repeat_groups(records):
+    """Return one record subtree per root run, retaining aggregate semantics."""
+    children = defaultdict(list)
+    by_id = {record["run_id"]: record for record in records}
+    for record in records:
+        if record["parent_run_id"] is not None:
+            children[record["parent_run_id"]].append(record["run_id"])
+    roots = [record for record in records if record["parent_run_id"] is None]
+    groups = []
+    for root in roots:
+        run_ids, stack = [], [root["run_id"]]
+        while stack:
+            run_id = stack.pop()
+            run_ids.append(run_id)
+            stack.extend(children[run_id])
+        groups.append([by_id[run_id] for run_id in run_ids])
+    return groups
+
+
+def _repeat_statistics(records):
+    groups = _repeat_groups(records)
+    summaries = [summarize(group) for group in groups]
+    metrics = {}
+    for field in REPEAT_METRICS:
+        values = [summary[field] for summary in summaries]
+        metrics[field] = (
+            {"median": statistics.median(values), "range": [min(values), max(values)]}
+            if values and all(value is not None for value in values) else None
+        )
+    return {"root_run_count": len(groups), **metrics}
+
+
+def _comparability(case_groups, before_variant, after_variant, catalog_case_ids=None):
+    before_cases = {case_id for case_id, variants in case_groups.items() if before_variant in variants}
+    after_cases = {case_id for case_id, variants in case_groups.items() if after_variant in variants}
+    paired = sorted(before_cases & after_cases)
+    catalog = set(catalog_case_ids if catalog_case_ids is not None else case_groups)
+    before_missing = sorted(catalog - before_cases)
+    after_missing = sorted(catalog - after_cases)
+    before_only, after_only = sorted(before_cases - after_cases), sorted(after_cases - before_cases)
+    root_counts = {
+        before_variant: {case_id: len(_repeat_groups(case_groups.get(case_id, {}).get(before_variant, []))) for case_id in catalog},
+        after_variant: {case_id: len(_repeat_groups(case_groups.get(case_id, {}).get(after_variant, []))) for case_id in catalog},
+    }
+    root_runs_match = bool(paired) and all(
+        root_counts[before_variant][case_id] == root_counts[after_variant][case_id]
+        and root_counts[before_variant][case_id] > 0
+        for case_id in paired
+    )
+    return {
+        "comparable": not before_missing and not after_missing and root_runs_match,
+        "paired_case_count": len(paired),
+        "paired_cases": paired,
+        "missing_cases": {before_variant: before_missing, after_variant: after_missing},
+        "unpaired_cases": {before_variant: before_only, after_variant: after_only},
+        "root_run_counts": root_counts,
+        "root_runs_match": root_runs_match,
+    }
+
+
+def _quality_gate(before, after, is_comparable):
+    reasons = []
+    if not is_comparable:
+        reasons.append("coverage_not_comparable")
+    if not before["usage_complete"] or not after["usage_complete"]:
+        reasons.append("usage_incomplete")
+    acceptance = (before["acceptance_passed"], after["acceptance_passed"])
+    if False in acceptance:
+        reasons.append("acceptance_failed")
+    elif None in acceptance:
+        reasons.append("acceptance_unknown")
+    claims = (before["unsupported_done_claims"], after["unsupported_done_claims"])
+    if any(value is not None and value > 0 for value in claims):
+        reasons.append("unsupported_done_claims")
+    elif any(value is None for value in claims):
+        reasons.append("unsupported_done_claims_unknown")
+    return {"passed": not reasons, "reasons": reasons}
+
+
+def _gated_comparison(before, after, comparability):
+    gate = _quality_gate(before, after, comparability["comparable"])
+    return {
+        **compare(before, after),
+        "comparability": comparability,
+        "quality_gate": gate,
+        "savings_eligible": gate["passed"],
+    }
+
+
 def _read_jsonl(path):
     records = []
     with open(path, encoding="utf-8") as stream:
@@ -230,11 +327,20 @@ def evaluate_files(runs_path, cases_path):
     for case in cases:
         variants = {variant: summarize(group) for variant, group in sorted(groups[case["case_id"]].items())}
         comparisons = {}
+        case_groups = {case["case_id"]: groups[case["case_id"]]}
         if "baseline" in variants:
             for variant, summary in variants.items():
                 if variant != "baseline":
-                    comparisons[variant] = compare(variants["baseline"], summary)
-        results.append({"case_id": case["case_id"], "variants": variants, "comparisons": comparisons})
+                    comparisons[variant] = _gated_comparison(
+                        variants["baseline"], summary,
+                        _comparability(case_groups, "baseline", variant, [case["case_id"]]),
+                    )
+        repeat_statistics = {
+            variant: _repeat_statistics(records)
+            for variant, records in sorted(groups[case["case_id"]].items())
+        }
+        results.append({"case_id": case["case_id"], "variants": variants,
+                        "repeat_statistics": repeat_statistics, "comparisons": comparisons})
     by_variant = defaultdict(list)
     for record in records:
         by_variant[record["variant"]].append(record)
@@ -243,7 +349,10 @@ def evaluate_files(runs_path, cases_path):
     if "baseline" in summaries:
         for variant, summary in summaries.items():
             if variant != "baseline":
-                comparisons[variant] = compare(summaries["baseline"], summary)
+                comparisons[variant] = _gated_comparison(
+                    summaries["baseline"], summary,
+                    _comparability(groups, "baseline", variant, case_ids),
+                )
     return {
         "run_count": len(records), "case_count": len(cases),
         "variants": summaries, "comparisons": comparisons, "cases": results,
