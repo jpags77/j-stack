@@ -32,3 +32,5 @@ Append-only. Format: ## [YYYY-MM-DD HH:MM] <operation> | <subject>
 ## [2026-09-20 18:07 UTC] review | runtime plan — fresh-context Luna review identified baseline sequencing, WIP ownership, filename collisions, and token denominator ambiguities; all four incorporated into design/plan. Dispositions in reviews/2026-09-20-runtime-plan-review.md. Baseline now precedes all instruction changes.
 
 ## [2026-09-21] resume | runtime reliability BUILD — resumed surviving Task 0 files and Luna worker after usage limit; baseline decisions preserved, token telemetry unavailable. Worktree codex/runtime-reliability; handoffs/2026-09-21-runtime-build-resume.md records recovery location. Full implementation remains in progress.
+
+## [2026-09-21] checkpoint | runtime baseline and evaluator — Task 0 committed f6137ac, supplemental pressure baseline 7c0c72a; evaluator hardening 8150c7c/27284e5 passes 28 tests. CI scaffold fd3ed11/4084204 requires recovery suite (not delivered yet); macOS existing shell suites previously passed, Linux CI not run. Task 1 schema implementation is active. No measured token savings, real-home installation, live Jev call, or push.

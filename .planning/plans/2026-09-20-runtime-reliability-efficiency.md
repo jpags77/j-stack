@@ -16,7 +16,9 @@ capabilities, unittest, existing shell tests, GitHub Actions for offline checks.
 
 **Spec:** `.planning/vision/runtime-reliability-efficiency.md`
 **Prior art:** `.planning/prior-art/runtime-efficiency.md`
-**Status:** Ready for user review; product implementation has not started.
+**Status:** User approved; BUILD in progress in branch `codex/runtime-reliability`.
+Task 0 baseline committed. Consult the plan-specific SDD ledger for implementation
+progress; unchecked items below remain requirements, not completion claims.
 
 ## Global constraints
 

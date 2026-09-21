@@ -8,7 +8,7 @@ One-line summary of every page in this wiki. Update on every page creation.
 **Phase:** BUILD — approved runtime reliability and efficiency plan; baseline capture precedes instruction changes. Implementation uses Luna workers in an isolated worktree.
 **Fidelity target:** C — MVP (production-ready Claude Code skill stack)
 **Prior-art:** ✅ complete — scoped to runtime reliability and efficiency; HYBRID native-first approach authorized by the user's instruction to proceed. See prior-art/runtime-efficiency.md. A retrospective survey of the entire original pipeline remains outstanding.
-**Last updated:** 2026-09-20T18:07:35Z
+**Last updated:** 2026-09-21
 
 ## Iteration Progress
 
@@ -37,7 +37,7 @@ Which phase steps have run in the **current** iteration. Reset all to ⬜ when t
 **Prior docs:** CLAUDE.md, AGENTS.md, .planning/ wiki, skills/ and agents/ directories.
 
 ## vision/
-- [runtime-reliability-efficiency.md](vision/runtime-reliability-efficiency.md) — written design for recovery, shared evidence, proportional workflow, and measured efficiency; pending implementation-plan review
+- [runtime-reliability-efficiency.md](vision/runtime-reliability-efficiency.md) — approved design for recovery, shared evidence, proportional workflow, and measured efficiency
 - [understand-anything-integration.md](vision/understand-anything-integration.md) — CLOSED: Understand-Anything integration evaluated and rejected (scope mismatch)
 - [codex-integration.md](vision/codex-integration.md) — implemented design for treating Codex as a first-class fallback and review runtime via AGENTS.md + .planning/
 - [handoff-blackboard.md](vision/handoff-blackboard.md) — accepted design for structured handoff snapshots with typed state, provenance, conflicts, and checkpoint policy
@@ -52,7 +52,7 @@ Which phase steps have run in the **current** iteration. Reset all to ⬜ when t
 - [jev-context-compaction.md](prior-art/jev-context-compaction.md) — Jev extractive compaction survey; recommends optional experimentation plus a deterministic WIP capsule, adoption decision pending
 
 ## plans/
-- [2026-09-20-runtime-reliability-efficiency.md](plans/2026-09-20-runtime-reliability-efficiency.md) — eight core tasks with Luna ownership, interfaces, acceptance checks, token baseline, and Ponytail simplification; implementation pending review
+- [2026-09-20-runtime-reliability-efficiency.md](plans/2026-09-20-runtime-reliability-efficiency.md) — approved eight-task implementation plan; BUILD underway with Luna and baseline committed
 - [2026-06-17-ponytail-fixes.md](plans/2026-06-17-ponytail-fixes.md) — ponytail audit fixes: skill extraction, install.sh shrink (-807 lines), vanilla HTML
 
 ## reviews/
