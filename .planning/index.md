@@ -5,7 +5,7 @@ One-line summary of every page in this wiki. Update on every page creation.
 ## Current State
 
 **Iteration:** 1
-**Phase:** PLAN — runtime reliability and efficiency initiative; written plan awaiting review. The standing maintenance backlog remains historical context.
+**Phase:** BUILD — approved runtime reliability and efficiency plan; baseline capture precedes instruction changes. Implementation uses Luna workers in an isolated worktree.
 **Fidelity target:** C — MVP (production-ready Claude Code skill stack)
 **Prior-art:** ✅ complete — scoped to runtime reliability and efficiency; HYBRID native-first approach authorized by the user's instruction to proceed. See prior-art/runtime-efficiency.md. A retrospective survey of the entire original pipeline remains outstanding.
 **Last updated:** 2026-09-20T18:07:35Z
@@ -18,7 +18,7 @@ Which phase steps have run in the **current** iteration. Reset all to ⬜ when t
 - [EXPAND] plan-ceo-review — ⬜  `[confirm]`
 - [REFINE] brainstorming — ⬜  `[confirm]`
 - [SURVEY] prior-art-survey — ✅  `[scope: runtime reliability and efficiency; prior-art/runtime-efficiency.md]`
-- [PLAN] writing-plans — ✅  `[scope: plans/2026-09-20-runtime-reliability-efficiency.md; user review pending]`
+- [PLAN] writing-plans — ✅  `[scope: plans/2026-09-20-runtime-reliability-efficiency.md; user approved BUILD]`
 - [PLAN] ponytail-review spec — ✅  `[scope: simplification gate in runtime reliability and efficiency plan]`
 - [BUILD] subagent-driven-development — ⬜  `[auto: commits since plan]`
 - [POLISH] qa — ⬜  `[auto: reviews/qa-*]`
@@ -56,6 +56,7 @@ Which phase steps have run in the **current** iteration. Reset all to ⬜ when t
 - [2026-06-17-ponytail-fixes.md](plans/2026-06-17-ponytail-fixes.md) — ponytail audit fixes: skill extraction, install.sh shrink (-807 lines), vanilla HTML
 
 ## reviews/
+- [runtime-baseline.md](reviews/runtime-baseline.md) — pre-change synthetic decision baseline; native token usage unknown
 - [2026-09-20-runtime-plan-review.md](reviews/2026-09-20-runtime-plan-review.md) — Luna review findings resolved: baseline sequencing, WIP ownership, filename collisions, and token accounting
 - [2026-09-20-j-stack-strategic-review.md](reviews/2026-09-20-j-stack-strategic-review.md) — strategic assessment: recovery within turns, shared state contracts, proportional process, acceptance evidence, and behavioral evaluation; recommendations only
 
@@ -63,6 +64,7 @@ Which phase steps have run in the **current** iteration. Reset all to ⬜ when t
 (empty — populate after stakeholder-pack)
 
 ## handoffs/
+- [2026-09-21-runtime-build-resume.md](handoffs/2026-09-21-runtime-build-resume.md) — approved BUILD resumed in isolated worktree after usage interruption; consult task ledger for progress
 - [2026-09-20T1807-runtime-plan.md](handoffs/2026-09-20T1807-runtime-plan.md) — written plan ready for review; Luna execution retained; baseline and versioned state are first tasks
 - [2026-07-10T1803-snapshot.md](handoffs/2026-07-10T1803-snapshot.md) — self-audit findings: 10 furthering ideas + 10 redundancies/inconsistencies to prune, 18 prioritized next actions (N1-N18), none implemented yet
 - [2026-07-19T1707-codex-checkpoint.md](handoffs/2026-07-19T1707-codex-checkpoint.md) — Codex sync checkpoint: latest WIP verified, stale Codex config test fixed, cached gstack pin enforcement tightened, tests passing
