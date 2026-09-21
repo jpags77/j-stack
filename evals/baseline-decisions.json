@@ -1,0 +1,84 @@
+{
+  "metadata": {
+    "model": "gpt-5.6-luna",
+    "effort": "medium",
+    "runtime": "Codex native",
+    "usage": null,
+    "label": "decision-only synthetic trial; not full acceptance or token measurement"
+  },
+  "cases": [
+    {
+      "case_id": "bounded-correction",
+      "first_actions": ["Treat as an existing j-stack task; reconcile current state from AGENTS.md, .planning/index.md, recent log entries, and newest handoff.", "Confirm the typo is within the already approved scope and constraints."],
+      "questions_you_would_ask": [],
+      "needed_phases": ["Continue the recorded phase; if all prior phases are complete, make the bounded BUILD change and proceed through any pending POLISH, DEFEND, or HANDOFF steps."],
+      "would_revisit_prior_art": false,
+      "how_resume": "Use the latest handoff and blackboard state; record any necessary checkpoint before switching or pausing.",
+      "what_proves_done": "README contains the corrected spelling and the existing scope, constraints, and fidelity target remain satisfied."
+    },
+    {
+      "case_id": "new-feature",
+      "first_actions": ["Read the j-stack blackboard and latest handoff; reconcile the approved requirements and current architecture evidence."],
+      "questions_you_would_ask": [],
+      "needed_phases": ["Continue phase order from current recorded state; ensure the feature is specified before PLAN, then implement in BUILD and complete pending POLISH, DEFEND, and HANDOFF."],
+      "would_revisit_prior_art": false,
+      "how_resume": "Continue from recorded phase and decisions, preserving current architecture evidence.",
+      "what_proves_done": "CSV export meets approved requirements, introduces no dependency, and passes the defined verification and review steps."
+    },
+    {
+      "case_id": "unknown-integration",
+      "first_actions": ["Read AGENTS.md, index, recent log, and newest handoff; reconcile the PoC scope and fidelity target.", "Clarify success conditions and sandbox boundaries; check whether .planning/ exists."],
+      "questions_you_would_ask": ["Which fidelity target applies: working PoC, polished demo, or MVP?", "What sandbox datasets and import criteria define reliable import?"],
+      "needed_phases": ["EXPAND → REFINE → SURVEY → PLAN → BUILD → POLISH → DEFEND → HANDOFF. If .planning/ is absent, initialize it per poc-wiki-init after asking fidelity."],
+      "would_revisit_prior_art": true,
+      "how_resume": "Record findings and decisions in the blackboard; snapshot before switching or pausing.",
+      "what_proves_done": "A sandbox import meets agreed reliability criteria, evidence is recorded, and logs contain no credentials; prior-art decision is explicit."
+    },
+    {
+      "case_id": "changed-architecture",
+      "first_actions": ["Read the blackboard and latest handoff; identify the approved local-only decision and its provenance.", "Surface the architecture change as a conflict requiring updated scope and evidence."],
+      "questions_you_would_ask": ["Is cloud storage and auth now an approved requirement, including the intended fidelity target and constraints?"],
+      "needed_phases": ["Revisit EXPAND/REFINE for changed scope, then SURVEY and PLAN before BUILD; continue POLISH, DEFEND, HANDOFF."],
+      "would_revisit_prior_art": true,
+      "how_resume": "Preserve the old decision and record the new decision and conflict resolution; snapshot with ordered next actions.",
+      "what_proves_done": "Approved cloud design is implemented and reviewed, with updated blackboard decisions and verification."
+    },
+    {
+      "case_id": "irrelevant-copy-edit",
+      "first_actions": ["Reconcile the current phase and handoff; verify the spelling correction does not alter behavior or interface."],
+      "questions_you_would_ask": [],
+      "needed_phases": ["Continue the current phase; do not reopen prior-art or design phases for a copy-only correction. Complete any pending handoff."],
+      "would_revisit_prior_art": false,
+      "how_resume": "Use existing blackboard state; record a checkpoint if pausing or switching tools.",
+      "what_proves_done": "Button spelling is corrected and the already-passed QA remains applicable to the unchanged behavior and interface."
+    },
+    {
+      "case_id": "interrupted-mutation",
+      "first_actions": ["Inspect the current working tree and newest handoff, plus the blackboard/log, before deciding what to do next.", "Reconcile the source edit and rate-limit interruption; do not infer the unwritten next step."],
+      "questions_you_would_ask": ["If the recorded state does not establish intent, what was the intended next step after the edit?"],
+      "needed_phases": ["Resume the recorded phase; perform remaining verification and required later phases, then HANDOFF."],
+      "would_revisit_prior_art": false,
+      "how_resume": "Preserve current changes, document provenance and unresolved intent, and create a complete schema snapshot before another switch.",
+      "what_proves_done": "The intended change is complete and verified, unresolved conflicts are recorded, and the handoff captures state and next actions."
+    },
+    {
+      "case_id": "cross-runtime-handoff",
+      "first_actions": ["Read the current worktree's AGENTS.md, blackboard, recent log, and newest committed handoff.", "Treat the other worktree's newer dirty changes as unavailable evidence unless provided; do not claim they are incorporated."],
+      "questions_you_would_ask": ["Can the newer Claude worktree or its changes be made available if this task depends on them?"],
+      "needed_phases": ["If the old task is complete and no new task is requested, none; if continuing, follow the repo's phase order from the available state."],
+      "would_revisit_prior_art": false,
+      "how_resume": "Resume from the committed handoff; record any newly provided cross-runtime state with provenance.",
+      "what_proves_done": "For the stated old task, the committed handoff records completion; any new work has its own verified state."
+    },
+    {
+      "case_id": "absent-optional-capability",
+      "first_actions": ["Reconcile the task phase and review requirements from the blackboard and handoff.", "Determine which security-review evidence is missing and report reviewer/API unavailability."],
+      "questions_you_would_ask": ["Who or what approved reviewer can provide the required security review?"],
+      "needed_phases": ["Continue available work in phase order, but do not mark DEFEND complete while required evidence is incomplete; HANDOFF can record the blocker and next action."],
+      "would_revisit_prior_art": false,
+      "how_resume": "Snapshot the evidence gap, unavailable capability, and ordered action to obtain review.",
+      "what_proves_done": "Required security review evidence is obtained and recorded; otherwise the task remains explicitly incomplete at DEFEND."
+    }
+  ],
+  "caveat": "These are process decisions from the four specified skills and supplied case facts, not repository inspection or proof that any case is complete."
+}

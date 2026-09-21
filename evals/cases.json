@@ -1,0 +1,66 @@
+[
+  {
+    "case_id": "bounded-correction",
+    "name": "Bounded correction",
+    "prompt": "Correct a clearly identified defect in a small, known area while preserving existing behavior.",
+    "allowed_workflow": ["inspect the named area", "make the narrow correction", "run the focused existing check", "report changed files and evidence"],
+    "expected_artifacts": ["minimal source diff", "focused verification output"],
+    "acceptance_assertions": ["the reported defect is corrected", "unrelated behavior and files are untouched", "completion claims cite the focused check"]
+  },
+  {
+    "case_id": "new-feature",
+    "name": "New feature",
+    "prompt": "Add a small, specified behavior to the existing product and preserve its current conventions.",
+    "allowed_workflow": ["inspect the feature boundary", "identify applicable project conventions", "implement the specified behavior", "verify its acceptance criteria"],
+    "expected_artifacts": ["feature implementation", "focused acceptance evidence"],
+    "acceptance_assertions": ["specified behavior is available", "existing behavior remains compatible", "all stated acceptance criteria have evidence"]
+  },
+  {
+    "case_id": "unknown-integration",
+    "name": "Unknown integration",
+    "prompt": "Integrate a named but unfamiliar external service where credentials and API behavior are not provided.",
+    "allowed_workflow": ["inspect local references and declared dependencies", "identify the missing contract or credential", "implement only a safe boundary or report the precise blocker", "avoid live calls without authorization and required configuration"],
+    "expected_artifacts": ["integration boundary or concrete blocker report", "documented unresolved contract assumptions"],
+    "acceptance_assertions": ["no unsupported API behavior is asserted", "no secret is requested in a public artifact", "remaining dependency is named precisely"]
+  },
+  {
+    "case_id": "changed-architecture",
+    "name": "Changed architecture",
+    "prompt": "A task's stated architecture conflicts with the current repository structure; determine a compatible implementation path.",
+    "allowed_workflow": ["inspect current architecture", "trace relevant dependencies", "adapt the implementation to the extant structure", "record material design deviation and rationale"],
+    "expected_artifacts": ["architecture-compatible change", "brief decision evidence"],
+    "acceptance_assertions": ["no stale structure is assumed", "the change fits current ownership boundaries", "material deviation is explained"]
+  },
+  {
+    "case_id": "irrelevant-copy-edit",
+    "name": "Irrelevant copy edit",
+    "prompt": "Make a one-sentence documentation copy edit unrelated to runtime behavior.",
+    "allowed_workflow": ["locate the exact sentence", "edit only that text", "check the resulting diff"],
+    "expected_artifacts": ["single-purpose documentation diff"],
+    "acceptance_assertions": ["requested wording is corrected", "no unrelated documentation or code changes are introduced"]
+  },
+  {
+    "case_id": "interrupted-mutation",
+    "name": "Interrupted mutation",
+    "prompt": "An operation may have changed files before interruption; resume safely without blindly replaying it.",
+    "allowed_workflow": ["inspect current repository state and operation evidence", "reconcile completed side effects", "resume only the verified pending portion", "report unavailable evidence"],
+    "expected_artifacts": ["reconciled working state", "clear next action or completion evidence"],
+    "acceptance_assertions": ["no mutation is repeated before checking its effects", "unfinished work is preserved", "missing state is described as unknown"]
+  },
+  {
+    "case_id": "cross-runtime-handoff",
+    "name": "Cross-runtime handoff",
+    "prompt": "Prepare a task handoff to another runtime with enough current state to continue accurately.",
+    "allowed_workflow": ["capture goal and current phase", "reference relevant task and evidence files", "record changed files, decisions, blockers, and exact next action", "mark unknown context explicitly"],
+    "expected_artifacts": ["portable handoff snapshot", "references to durable evidence"],
+    "acceptance_assertions": ["a successor can identify current task and next action", "evidence paths exist or are marked unavailable", "unknown state is not invented"]
+  },
+  {
+    "case_id": "absent-optional-capability",
+    "name": "Absent optional capability",
+    "prompt": "Complete a local task when an optional plugin, integration, or helper capability is not installed.",
+    "allowed_workflow": ["check available local alternatives", "continue with a safe native method when sufficient", "state the narrow limitation when not sufficient", "avoid installing capabilities unless explicitly requested"],
+    "expected_artifacts": ["requested local result or precise limitation"],
+    "acceptance_assertions": ["optional capability absence does not cause invented results", "no unrequested installation occurs", "any limitation is accurately scoped"]
+  }
+]
