@@ -1,3 +1,6 @@
 .DS_Store
 *.bak
 .codex/
+__pycache__/
+*.py[cod]
+graphify-out/

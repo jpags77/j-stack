@@ -17,6 +17,13 @@ assert_count() {
   [ "$(grep -Fc -- "$2" "$1")" -eq "$3" ] || fail "wrong count for $2"
 }
 assert_fails() { "$@" && fail "expected command to fail: $*"; }
+stat_mode() {
+  if stat -f '%Lp' "$1" >/dev/null 2>&1; then
+    stat -f '%Lp' "$1"
+  else
+    stat -c '%a' "$1"
+  fi
+}
 run_install() {
   (cd "$tmp_target" && HOME="$tmp_home" bash "$ROOT/install.sh" \
     --codex-only --codex-global --skip-codex --skip-verify)
@@ -87,9 +94,9 @@ assert_count "$global_agents" "j-stack:codex-global-policy:start" 1
 
 # Existing mode bits survive an atomic replacement.
 chmod 640 "$global_agents"
-mode_before="$(stat -f '%Lp' "$global_agents")"
+mode_before="$(stat_mode "$global_agents")"
 run_install
-[ "$mode_before" = "$(stat -f '%Lp' "$global_agents")" ] || fail "mode bits changed"
+[ "$mode_before" = "$(stat_mode "$global_agents")" ] || fail "mode bits changed"
 
 printf '%s\n' '# Personal rules' \
   '<!-- j-stack:codex-global-policy:start version=1 -->' \
