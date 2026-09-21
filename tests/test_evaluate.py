@@ -201,12 +201,43 @@ class CaseAndCliTests(unittest.TestCase):
                 self.assertFalse(report["comparisons"]["candidate"]["savings_eligible"])
                 self.assertIn(expected_reason, gate["reasons"])
 
-    def test_paired_complete_successful_zero_claim_comparison_is_savings_eligible(self):
+    def test_savings_gate_requires_matching_known_execution_settings(self):
+        report = self.evaluate_records([
+            run(run_id="b1"), run(run_id="b2"), run(run_id="b3"),
+            run(run_id="c1", variant="candidate", model="other-model"),
+            run(run_id="c2", variant="candidate", model="other-model"),
+            run(run_id="c3", variant="candidate", model="other-model"),
+        ], ["bounded-correction"])
+        comparison = report["comparisons"]["candidate"]
+        self.assertFalse(comparison["comparability"]["settings_match"])
+        self.assertIn("execution_settings_mismatch", comparison["quality_gate"]["reasons"])
+        self.assertFalse(comparison["savings_eligible"])
+
+    def test_unknown_execution_settings_are_not_comparable(self):
+        report = self.evaluate_records([
+            run(run_id=f"b{i}", model="unknown") for i in range(3)
+        ] + [run(run_id=f"c{i}", variant="candidate", model="unknown") for i in range(3)],
+            ["bounded-correction"],
+        )
+        comparison = report["comparisons"]["candidate"]
+        self.assertFalse(comparison["comparability"]["settings_known"])
+        self.assertIn("execution_settings_unknown", comparison["quality_gate"]["reasons"])
+
+    def test_single_repeat_is_preliminary_not_savings_eligible(self):
         report = self.evaluate_records([
             run(run_id="b"), run(run_id="c", variant="candidate", input_tokens=80),
         ], ["bounded-correction"])
         comparison = report["comparisons"]["candidate"]
         self.assertTrue(comparison["comparability"]["comparable"])
+        self.assertIn("insufficient_repeats", comparison["quality_gate"]["reasons"])
+        self.assertFalse(comparison["savings_eligible"])
+
+    def test_three_repeats_per_case_can_pass_savings_gate(self):
+        report = self.evaluate_records([
+            *(run(run_id=f"b{i}") for i in range(3)),
+            *(run(run_id=f"c{i}", variant="candidate", input_tokens=80) for i in range(3)),
+        ], ["bounded-correction"])
+        comparison = report["comparisons"]["candidate"]
         self.assertTrue(comparison["savings_eligible"])
 
     def test_case_catalog_has_eight_complete_descriptions(self):

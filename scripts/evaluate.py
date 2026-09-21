@@ -201,6 +201,9 @@ REPEAT_METRICS = (
     "output_tokens", "reasoning_tokens", "token_total", "wall_seconds",
     *QUALITY_COUNTS,
 )
+EXECUTION_SETTINGS = ("runtime", "runtime_version", "model", "effort")
+MIN_SAVINGS_REPEATS = 3
+UNKNOWN_SETTING_VALUES = {"", "unknown", "n/a", "na", "not available", "unspecified", "null"}
 
 
 def _repeat_groups(records):
@@ -252,21 +255,67 @@ def _comparability(case_groups, before_variant, after_variant, catalog_case_ids=
         and root_counts[before_variant][case_id] > 0
         for case_id in paired
     )
+    execution_settings = {before_variant: {}, after_variant: {}}
+    settings_known = True
+    settings_match = bool(paired)
+    for variant in (before_variant, after_variant):
+        for case_id in sorted(catalog):
+            roots = [group[0] for group in _repeat_groups(
+                case_groups.get(case_id, {}).get(variant, [])
+            )]
+            settings = [
+                {field: root[field] for field in EXECUTION_SETTINGS}
+                for root in roots
+            ]
+            execution_settings[variant][case_id] = settings
+            if any(value[field].strip().casefold() in UNKNOWN_SETTING_VALUES
+                   for value in settings for field in EXECUTION_SETTINGS):
+                settings_known = False
+    if settings_known:
+        settings_match = all(
+            execution_settings[before_variant][case_id]
+            and execution_settings[after_variant][case_id]
+            and all(value == execution_settings[before_variant][case_id][0]
+                    for value in execution_settings[before_variant][case_id])
+            and all(value == execution_settings[after_variant][case_id][0]
+                    for value in execution_settings[after_variant][case_id])
+            and execution_settings[before_variant][case_id][0]
+                == execution_settings[after_variant][case_id][0]
+            for case_id in paired
+        )
+    else:
+        settings_match = None
     return {
-        "comparable": not before_missing and not after_missing and root_runs_match,
+        "comparable": (not before_missing and not after_missing and root_runs_match
+                       and settings_known and settings_match is True),
         "paired_case_count": len(paired),
         "paired_cases": paired,
         "missing_cases": {before_variant: before_missing, after_variant: after_missing},
         "unpaired_cases": {before_variant: before_only, after_variant: after_only},
         "root_run_counts": root_counts,
         "root_runs_match": root_runs_match,
+        "execution_settings": execution_settings,
+        "settings_known": settings_known,
+        "settings_match": settings_match,
+        "minimum_savings_repeats_per_case": MIN_SAVINGS_REPEATS,
     }
 
 
-def _quality_gate(before, after, is_comparable):
+def _quality_gate(before, after, comparability):
     reasons = []
-    if not is_comparable:
+    if not comparability["comparable"]:
         reasons.append("coverage_not_comparable")
+    if not comparability["settings_known"]:
+        reasons.append("execution_settings_unknown")
+    elif comparability["settings_match"] is not True:
+        reasons.append("execution_settings_mismatch")
+    counts = comparability["root_run_counts"]
+    paired = comparability["paired_cases"]
+    if not paired or any(
+        min(counts[variant][case_id] for variant in counts) < MIN_SAVINGS_REPEATS
+        for case_id in paired
+    ):
+        reasons.append("insufficient_repeats")
     if not before["usage_complete"] or not after["usage_complete"]:
         reasons.append("usage_incomplete")
     acceptance = (before["acceptance_passed"], after["acceptance_passed"])
@@ -283,7 +332,7 @@ def _quality_gate(before, after, is_comparable):
 
 
 def _gated_comparison(before, after, comparability):
-    gate = _quality_gate(before, after, comparability["comparable"])
+    gate = _quality_gate(before, after, comparability)
     return {
         **compare(before, after),
         "comparability": comparability,
