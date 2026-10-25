@@ -12,7 +12,8 @@ cp -r "${ROOT}/skills/project-reflection" "$P/.claude/skills/"
 printf '# Index\n' > "$P/.planning/index.md"; printf '# Activity Log\n' > "$P/.planning/log.md"
 ( cd "$P" && git init -q && git add -A && git commit -qm init )
 cat > "${W}/settings.json" <<JSON
-{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"J_STACK_STATE_DIR=${J_STACK_STATE_DIR} python3 ${ROOT}/hooks/reflection-gate.py"}]}]}}
+{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"J_STACK_STATE_DIR=${J_STACK_STATE_DIR} python3 ${ROOT}/hooks/reflection-gate.py"}]}],
+"SessionEnd":[{"hooks":[{"type":"command","timeout":30,"command":"J_STACK_STATE_DIR=${J_STACK_STATE_DIR} python3 ${ROOT}/hooks/reflection-gate.py"}]}]}}
 JSON
 run() { ( cd "$P" && timeout 300 claude -p "$1" --settings "${W}/settings.json" --permission-mode acceptEdits \
    --allowedTools "Read Edit Write Bash(git:*) Skill" --output-format stream-json --verbose < /dev/null > "$2" 2>/dev/null ); }
@@ -33,6 +34,19 @@ else bad "neither an entry nor the sentinel"; fi
 python3 - <<PY && ok "pending cleared, nothing missed" || bad "state shows pending/missed"
 import json,glob
 d=json.load(open(glob.glob("${J_STACK_STATE_DIR}/*.json")[0])); assert d["pending"] is None and not d["missed"], d
+PY
+
+echo "metrics: measured record written at the checkpoint and shown to the agent"
+grep -q "Measured by the hook" "${W}/t.jsonl" && ok "figures quoted in the instruction" || bad "no figures in instruction"
+python3 - "$P/.planning/metrics.jsonl" <<'PY' && ok "metrics.jsonl has a positive, well-formed record" || bad "bad metrics record"
+import json,sys
+r=[json.loads(l) for l in open(sys.argv[1])]
+m=next(x for x in r if any("qa-2026-10-25" in i for i in x["items"]))   # SessionEnd also records after each run
+tok=sum(v["out"] for v in m["main_tokens"].values()); assert tok>0 and m["tool_calls"]>=1 and m["elapsed_s"]>=0 and m["claude_code_version"]
+PY
+python3 - "$P/.planning/metrics.jsonl" <<'PY' && ok "SessionEnd flushed a later record" || echo "  (note: no SessionEnd record; headless mode may not run SessionEnd hooks)"
+import json,sys
+assert any(json.loads(l)["items"]==["session end"] for l in open(sys.argv[1]))
 PY
 
 echo "repeat: same evidence, new turn"

@@ -307,16 +307,19 @@ mkdir -p "$HOOKS_DIR"
 cp "${SCRIPT_DIR}/hooks/reflection-gate.py" "${HOOKS_DIR}/j-stack-reflection-gate.py"
 chmod +x "${HOOKS_DIR}/j-stack-reflection-gate.py"
 
-# merge_hook EVENT MARKER COMMAND STATUS — idempotent merge into settings.json.
+# merge_hook EVENT MARKER COMMAND STATUS [TIMEOUT_SECONDS] — idempotent merge into settings.json.
 # Prints WROTE / ALREADY, or exits 3 on unparseable JSON.
 merge_hook() {
   python3 - "$SETTINGS_JSON" "$@" <<'PYEOF'
 import json, os, sys
 
 path, event, marker, command, status = sys.argv[1:6]
+timeout = int(sys.argv[6]) if len(sys.argv) > 6 else 0
 handler = {"type": "command", "command": command}
 if status:
     handler["statusMessage"] = status
+if timeout:
+    handler["timeout"] = timeout
 entry = {"hooks": [handler]}
 
 data = {}
@@ -342,12 +345,12 @@ PYEOF
 }
 
 install_hook() {
-  local event="$1" marker="$2" command="$3" status="$4" result
+  local event="$1" marker="$2" command="$3" status="$4" timeout="${5:-}" result
   if ! command -v python3 &>/dev/null; then
     warn "  python3 not found — cannot safely merge ${SETTINGS_JSON}. Add the ${event} hook manually — see README 'Manual hook setup'."
     return
   fi
-  result="$(merge_hook "$event" "$marker" "$command" "$status")" || result="PARSE_ERROR"
+  result="$(merge_hook "$event" "$marker" "$command" "$status" $timeout)" || result="PARSE_ERROR"
   case "$result" in
     WROTE)   info "  ✓ ${event} hook written to ${SETTINGS_JSON}" ;;
     ALREADY) info "  ${event} hook (${marker}) already present — skipping" ;;
@@ -358,6 +361,8 @@ install_hook() {
 SESSION_CMD="echo '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"MANDATORY j-stack: Invoke the session-start skill immediately before any development work (coding, planning, design, or file changes). Skip only for pure Q&A that produces no artifacts. Do not wait for user instruction — run it now.\"}}'"
 install_hook SessionStart "MANDATORY j-stack" "$SESSION_CMD" "Loading j-stack session context..."
 install_hook Stop "j-stack-reflection-gate" "python3 ${HOOKS_DIR}/j-stack-reflection-gate.py" ""
+# SessionEnd flushes the last unrecorded metrics; its default budget is 1.5s, so ask for more.
+install_hook SessionEnd "j-stack-reflection-gate" "python3 ${HOOKS_DIR}/j-stack-reflection-gate.py" "" 30
 
 fi
 

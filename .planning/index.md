@@ -58,10 +58,12 @@ Which phase steps have run in the **current** iteration. Reset all to ⬜ when t
 (empty — populate after stakeholder-pack)
 
 ## reflections
+- `metrics.jsonl` (created on first checkpoint once the hook is installed) — measured per-checkpoint session metrics (tokens by model, subagents, tool calls, time); written by the reflection-gate hook, not the model
 - [reflections.md](reflections.md) — advisory observations with evidence and uncertainty (project-reflection); 3 tentative entries, 2 backfilled from the 2026-07-19 handoffs
 
 ## handoffs/
 - [2026-10-25T1455-project-reflection.md](handoffs/2026-10-25T1455-project-reflection.md) — project-reflection built + tested; install and bounded pilot still required
+- [2026-10-25T1715-metrics.md](handoffs/2026-10-25T1715-metrics.md) — measured session metrics added to the reflection hook; install and background-subagent/Codex checks still required
 - [2026-10-25T1600-reflection-hook.md](handoffs/2026-10-25T1600-reflection-hook.md) — reflection trigger is now a model-free Stop hook (supersedes the instruction-based claim in the 1455 snapshot); install and Codex check still required
 - [2026-07-10T1803-snapshot.md](handoffs/2026-07-10T1803-snapshot.md) — self-audit findings: 10 furthering ideas + 10 redundancies/inconsistencies to prune, 18 prioritized next actions (N1-N18), none implemented yet
 - [2026-07-19T1707-codex-checkpoint.md](handoffs/2026-07-19T1707-codex-checkpoint.md) — Codex sync checkpoint: latest WIP verified, stale Codex config test fixed, cached gstack pin enforcement tightened, tests passing

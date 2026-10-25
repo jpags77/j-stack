@@ -32,3 +32,6 @@ Append-only. Format: ## [YYYY-MM-DD HH:MM] <operation> | <subject>
 ## [2026-10-25 15:45] implementation | reflection-gate hook + install_hook refactor in install.sh (idempotent, preserves user hooks); tests/reflection-gate.sh (14 deterministic checks), tests/reflection-hook-e2e.sh (real headless Stop hook: control silent, review file -> injected -> agent invoked Skill -> NO_REFLECTION_NEEDED, no refire)
 
 ## [2026-10-25 16:00] handoff | checkpoint
+## [2026-10-25 17:10] implementation | metrics — reflection-gate.py now measures tokens by model, subagents, tool calls/failures, elapsed/active time and Claude Code version from the transcript and appends .planning/metrics.jsonl at each checkpoint and at SessionEnd (dedupes usage per message id; verified against an independent recount and the harness's own subagent total). Skill told to cite records, never estimate. SessionEnd hook registered by install.sh (timeout 30). Failure scan made incremental. Tests: 8 new gate checks, e2e checks metrics record + SessionEnd flush.
+
+## [2026-10-25 17:15] handoff | checkpoint
