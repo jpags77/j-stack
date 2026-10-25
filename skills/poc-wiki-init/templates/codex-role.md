@@ -22,3 +22,4 @@ Claude slash commands and skills are the source names for the process. In Codex,
 | `/qa`, `/design-review`, `/cso` | Treat POLISH as verification, UX review, and security/risk review. |
 | `second-opinion` | Usually means Codex is the independent reviewer; produce review artifacts, not edits. |
 | `handoff-snapshot` | Write a timestamped `.planning/handoffs/` blackboard snapshot before switching tools, pausing, or checkpointing significant work. |
+| `project-reflection` | Follow the skill file named in the Reflection section; write only `.planning/reflections.md`. |

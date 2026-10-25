@@ -98,15 +98,32 @@ The output isn't just research — it becomes the "what else did you consider" s
 
 ---
 
-### Five custom skills — what doesn't exist anywhere else
+### Six custom skills — what doesn't exist anywhere else
 
 | Skill | What it does |
 |-------|-------------|
 | `session-start` | Session orientation ritual. Run at the start of every session — reads wiki state, confirms fidelity target, surfaces scope changes, handles iteration bumps, and declares the session goal before any work begins. Prevents silent drift between sessions. |
 | `poc-wiki-init` | Bootstraps the `.planning/` wiki at project start. Asks the fidelity target question upfront, generates schema files for Claude Code, Codex, Cursor, and ChatGPT. Idempotent — safe to run again. |
 | `handoff-snapshot` | Writes a timestamped blackboard snapshot to `.planning/handoffs/` with typed state, claims, provenance, conflicts, decisions, next steps, touched artifacts, and a paste-ready continuation prompt for the next tool. |
+| `project-reflection` | Quiet reflection at existing checkpoints (substantial review done, hard failure resolved, handoff). Records revisable observations — scope, evidence, a verified-vs-unverified cause — in `.planning/reflections.md`; writes nothing when nothing material was learned; asks for no approval; never edits CLAUDE.md, AGENTS.md, or skills. Invoked by instruction (the checkpoint text in CLAUDE.md/AGENTS.md and `handoff-snapshot`), not by a hook, so it is followed, not enforced. Also supports a bounded backfill over records you name. |
 | `second-opinion` | Dispatches an artifact to Codex CLI for independent review, then synthesizes a convergence/divergence matrix. Two AI vendors reviewing the same artifact independently. |
 | `stakeholder-pack` | Aggregates vision, prior-art, security, and cross-model review outputs into a single executive-ready document. Pre-answers the five standard enterprise PoC questions. |
+
+
+### Project reflection
+
+`project-reflection` writes `.planning/reflections.md`: short, dated, revisable observations with scope, evidence, and whether the cause was verified. Entries are advisory; nothing is promoted into CLAUDE.md, AGENTS.md, or other skills.
+
+**What triggers it (deterministic, not a standing instruction):** a `Stop` hook runs `reflection-gate.py` after every turn. The script uses no model and takes milliseconds (the failure scan is incremental, so it doesn't slow down in long sessions). It stays silent unless something checkpoint-like happened since it last looked: a new or changed file in `.planning/reviews/` or `.planning/handoffs/` (so `/qa`, `/cso`, `second-opinion`, and `handoff-snapshot` all count), or a session with six or more failed tool calls (a rough proxy for a hard failure). When it fires, it blocks the stop once and gives Claude the instruction to run the skill on that evidence. It then checks the result: `reflections.md` changed, or Claude replied `NO_REFLECTION_NEEDED`. If neither, it re-prompts once, then records a miss in `~/.j-stack/reflection-state/` and lets go. It cannot loop, and edits to `reflections.md` or the log never count as evidence.
+
+**Metrics (measured, never estimated).** At each checkpoint, and again when a session ends, the same script reads the session transcript (and any subagent transcripts) and appends one record to `.planning/metrics.jsonl`: tokens by model (input, output, cache read, cache write), subagents used (type, model, tokens, seconds), tool calls and failures, elapsed time and active time (gaps over five minutes don't count), and the Claude Code version. The model never produces these numbers. It receives the record in the checkpoint message and can cite it from a reflection entry's `Cost:` line, but a single window is an observation, not a baseline, and different tasks aren't comparable. The reflection turn's own cost lands in the next record, so the overhead of reflecting is itself visible. Figures were cross-checked against an independent recomputation and against Claude Code's own subagent token total. Limits: the transcript can lag the current turn (the next record picks up what was missed), the five-minute rule is a stated heuristic, not true attention time, and past sessions' figures can't be backfilled. Records contain no prompt text beyond a 60-character subagent description.
+
+**What this guarantees and what it doesn't.** The trigger and the follow-up check are deterministic. The judgement, whether anything is worth recording, is the model's, and often the right answer is nothing. A review that is never filed under `.planning/reviews/` is invisible to the gate (the existing POLISH filing rule still depends on the model). The first run in a project only records a baseline, so old history is never ingested automatically.
+
+- **Install:** `bash install.sh` copies the hook to `~/.claude/hooks/` and merges it into `~/.claude/settings.json` (your other hooks are untouched). Run it once; every project with a `.planning/` folder is covered, and projects without one are ignored. Existing projects also get the short `## Reflection` section in CLAUDE.md/AGENTS.md.
+- **Codex:** the skill file is installed to `~/.codex/skills/` and AGENTS.md points at it, but the automatic trigger is **not verified for Codex** (its hook docs were unreachable when this was built). Until someone tests Codex's `Stop` hook with this script, Codex reflection depends on the AGENTS.md instruction.
+- **Backfill:** ask for it by naming records ("reflect on handoffs/X and the 2026-07-19 log entries"). It never scans on its own.
+- **Tests:** `tests/reflection-gate.sh` (deterministic, free); opt-in model-backed `tests/reflection-behavior.sh` and `tests/reflection-hook-e2e.sh` (need the `claude` CLI).
 
 ---
 
@@ -284,7 +301,7 @@ bash install.sh --skip-codex    # skip Codex CLI check (if not using second-opin
 bash install.sh --skip-verify   # skip post-install verification
 ```
 
-The default script clones gstack, copies 11 cherry-picked skills into `~/.claude/skills/` with model directives injected, installs the 5 custom skills plus the bundled `prior-art-survey` (all from `skills/` files in this repo), installs the three scout agents into `~/.claude/agents/` (pinned to `model: sonnet`, honored by the Agent tool at dispatch), writes the project `CLAUDE.md` and `AGENTS.md` lane configuration, and merges a `SessionStart` hook into `~/.claude/settings.json` so `session-start` fires automatically (see [Manual hook setup](#manual-hook-setup) if you don't have `python3`).
+The default script clones gstack, copies 11 cherry-picked skills into `~/.claude/skills/` with model directives injected, installs the 6 custom skills plus the bundled `prior-art-survey` (all from `skills/` files in this repo), installs the three scout agents into `~/.claude/agents/` (pinned to `model: sonnet`, honored by the Agent tool at dispatch), writes the project `CLAUDE.md` and `AGENTS.md` lane configuration, and merges a `SessionStart` hook and a `Stop` reflection-gate hook into `~/.claude/settings.json` so `session-start` and checkpoint reflection fire automatically (see [Manual hook setup](#manual-hook-setup) if you don't have `python3`).
 
 `--codex-only` skips Claude CLI/plugin/skill/agent/hook installation. It checks for the Codex CLI, writes the project `AGENTS.md` runtime mapping, and verifies the Codex surface. Use it when the repo should be workable from Codex without installing the Claude skill host on that machine.
 
@@ -308,6 +325,12 @@ The default script clones gstack, copies 11 cherry-picked skills into `~/.claude
     ]
   }
 }
+```
+
+The reflection gate is a second hook, on `Stop`. Copy `hooks/reflection-gate.py` to `~/.claude/hooks/j-stack-reflection-gate.py` and merge (the same command on `SessionEnd`, with `"timeout": 30`, flushes the last metrics):
+
+```json
+{ "hooks": { "Stop": [ { "hooks": [ { "type": "command", "command": "python3 ~/.claude/hooks/j-stack-reflection-gate.py" } ] } ] } }
 ```
 
 Without the hook, j-stack still works — the global `~/.claude/CLAUDE.md` instructs Claude to run `session-start` at the top of every session — but the hook makes it deterministic rather than relying on the model honoring the instruction.

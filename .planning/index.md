@@ -7,8 +7,8 @@ One-line summary of every page in this wiki. Update on every page creation.
 **Iteration:** 1
 **Phase:** BUILD (maintenance) — this is j-stack's own repo under continuous self-improvement, not a single EXPAND→HANDOFF pass. Engagement Context below is the standing spec; the 2026-07-10 self-audit backlog (handoffs/2026-07-10T1803-snapshot.md, N1-N18) is the current unit of work.
 **Fidelity target:** C — MVP (production-ready Claude Code skill stack)
-**Prior-art:** ⬜ pending — the original pipeline design predates prior-art-survey's existence and was never run against it; genuinely outstanding, not just stale bookkeeping.
-**Last updated:** 2026-07-19T17:15:12Z
+**Prior-art:** ✅ complete — BUILD (project-reflection), 2026-10-25. Bounded inline survey; decision delegated by the task brief. The original pipeline design still predates the survey skill.
+**Last updated:** 2026-10-25T14:50:00Z
 
 ## Iteration Progress
 
@@ -17,7 +17,7 @@ Which phase steps have run in the **current** iteration. Reset all to ⬜ when t
 - [EXPAND] office-hours — ✅  `[auto: vision/]`
 - [EXPAND] plan-ceo-review — ⬜  `[confirm]`
 - [REFINE] brainstorming — ⬜  `[confirm]`
-- [SURVEY] prior-art-survey — ⬜  `[auto: Prior-art flag above — authoritative]`
+- [SURVEY] prior-art-survey — ✅  `[auto: Prior-art flag above — authoritative]`
 - [PLAN] writing-plans — ✅  `[auto: plans/2026-06-17-ponytail-fixes.md]`
 - [PLAN] ponytail-review spec — ⬜  `[confirm]`
 - [BUILD] subagent-driven-development — ⬜  `[auto: commits since plan]`
@@ -45,9 +45,10 @@ Which phase steps have run in the **current** iteration. Reset all to ⬜ when t
 - [headroom-integration.md](vision/headroom-integration.md) — headroom context compression: global triggers + j-stack pipeline checkpoints
 
 ## prior-art/
-(empty — populate after prior-art-survey)
+- [project-reflection.md](prior-art/project-reflection.md) — reflection/memory tools surveyed; decision: BUILD (thin)
 
 ## plans/
+- [2026-10-25-project-reflection.md](plans/2026-10-25-project-reflection.md) — project-reflection skill, checkpoint wiring, tests
 - [2026-06-17-ponytail-fixes.md](plans/2026-06-17-ponytail-fixes.md) — ponytail audit fixes: skill extraction, install.sh shrink (-807 lines), vanilla HTML
 
 ## reviews/
@@ -56,7 +57,14 @@ Which phase steps have run in the **current** iteration. Reset all to ⬜ when t
 ## stakeholder-pack/
 (empty — populate after stakeholder-pack)
 
+## reflections
+- `metrics.jsonl` (created on first checkpoint once the hook is installed) — measured per-checkpoint session metrics (tokens by model, subagents, tool calls, time); written by the reflection-gate hook, not the model
+- [reflections.md](reflections.md) — advisory observations with evidence and uncertainty (project-reflection); 3 tentative entries, 2 backfilled from the 2026-07-19 handoffs
+
 ## handoffs/
+- [2026-10-25T1455-project-reflection.md](handoffs/2026-10-25T1455-project-reflection.md) — project-reflection built + tested; install and bounded pilot still required
+- [2026-10-25T1715-metrics.md](handoffs/2026-10-25T1715-metrics.md) — measured session metrics added to the reflection hook; install and background-subagent/Codex checks still required
+- [2026-10-25T1600-reflection-hook.md](handoffs/2026-10-25T1600-reflection-hook.md) — reflection trigger is now a model-free Stop hook (supersedes the instruction-based claim in the 1455 snapshot); install and Codex check still required
 - [2026-07-10T1803-snapshot.md](handoffs/2026-07-10T1803-snapshot.md) — self-audit findings: 10 furthering ideas + 10 redundancies/inconsistencies to prune, 18 prioritized next actions (N1-N18), none implemented yet
 - [2026-07-19T1707-codex-checkpoint.md](handoffs/2026-07-19T1707-codex-checkpoint.md) — Codex sync checkpoint: latest WIP verified, stale Codex config test fixed, cached gstack pin enforcement tightened, tests passing
 - [2026-07-19T1715-codex-runtime.md](handoffs/2026-07-19T1715-codex-runtime.md) — Codex runtime split: `install.sh --codex-only`, separate-runtime docs/templates/tests, local Codex/Superpowers presence confirmed

@@ -1,0 +1,3 @@
+## Reflection
+
+A model-free Stop hook (`reflection-gate`, installed by j-stack) notices new review or handoff files under `.planning/` and tells you to run `project-reflection` on that evidence; when it does, run it. It records revisable observations in `.planning/reflections.md`, asks for no approval, and writes nothing when nothing material was learned (reply `NO_REFLECTION_NEEDED`). Without the hook, run it by hand after a substantial review, a hard failure, or a handoff (Codex: read `~/.claude/skills/project-reflection/SKILL.md` or `~/.codex/skills/project-reflection/SKILL.md`). Its own edits never trigger another reflection. Observations are advisory: they do not change this file, other skills, or policy.

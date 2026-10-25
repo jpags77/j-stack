@@ -126,6 +126,9 @@ The JSON block is the blackboard. Keep it valid JSON, keep IDs stable within the
 
 ### 3. Append to log.md
 
+(Writing the snapshot is itself a checkpoint: the reflection-gate Stop hook notices the new file and asks for `project-reflection` afterwards. Do not run it from here.)
+
+
 `## [<timestamp>] handoff | <reason: usage_limits / planned_switch / pause>`
 
 ### 4. Update index.md

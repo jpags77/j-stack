@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # j-stack install script
 # Sets up the j-stack enterprise PoC workflow:
-#   Superpowers + cherry-picked gstack skills + 5 custom skills + prior-art bundle
+#   Superpowers + cherry-picked gstack skills + 6 custom skills + prior-art bundle
 #   + Claude CLAUDE.md lane config + Codex AGENTS.md runtime config
 #   + Claude SessionStart hook
 #
@@ -174,7 +174,7 @@ done
 # ─── Phase 2: Custom skills ────────────────────────────────────────────────────────────────────────────
 
 info "Phase 2 — Installing custom skills…"
-CUSTOM_SKILLS=(poc-wiki-init handoff-snapshot second-opinion stakeholder-pack session-start)
+CUSTOM_SKILLS=(poc-wiki-init handoff-snapshot second-opinion stakeholder-pack session-start project-reflection)
 
 for skill in "${CUSTOM_SKILLS[@]}"; do
   src="${SCRIPT_DIR}/skills/${skill}"
@@ -221,12 +221,20 @@ info "Phase 3 — Configuring project CLAUDE.md…"
 
 # Sourced from templates/lane-doctrine.md — the single copy of this text.
 # Edit that file, not this script, to change the shared doctrine.
-CLAUDE_SECTION="$(cat "${SCRIPT_DIR}/templates/lane-doctrine.md")"
+REFLECTION_SECTION="$(cat "${SCRIPT_DIR}/templates/reflection-checkpoint.md")"
+CLAUDE_SECTION="$(cat "${SCRIPT_DIR}/templates/lane-doctrine.md")
+
+${REFLECTION_SECTION}"
 
 PROJECT_CLAUDE="${PWD}/CLAUDE.md"
 if [ -f "$PROJECT_CLAUDE" ]; then
   if grep -q "Stack ownership" "$PROJECT_CLAUDE"; then
-    info "  CLAUDE.md already contains stack ownership section — skipping"
+    if grep -q "project-reflection" "$PROJECT_CLAUDE"; then
+      info "  CLAUDE.md already contains stack ownership and reflection sections — skipping"
+    else
+      printf '\n%s\n' "$REFLECTION_SECTION" >> "$PROJECT_CLAUDE"
+      info "  Appended reflection section to existing CLAUDE.md"
+    fi
   else
     printf '\n# Project Context\n\n%s\n' "$CLAUDE_SECTION" >> "$PROJECT_CLAUDE"
     info "  Appended stack ownership section to existing CLAUDE.md"
@@ -247,15 +255,34 @@ info "Phase 3.25 — Configuring project AGENTS.md…"
 # Codex-specific addendum.
 LANE_DOCTRINE="$(cat "${SCRIPT_DIR}/templates/lane-doctrine.md")"
 CODEX_ROLE="$(cat "${SCRIPT_DIR}/templates/codex-role.md")"
+REFLECTION_SECTION="$(cat "${SCRIPT_DIR}/templates/reflection-checkpoint.md")"
 AGENTS_SECTION="${LANE_DOCTRINE}
 
+${REFLECTION_SECTION}
+
 ${CODEX_ROLE}"
-AGENTS_CODEX_APPEND="$CODEX_ROLE"
+AGENTS_CODEX_APPEND="${REFLECTION_SECTION}
+
+${CODEX_ROLE}"
+
+# Codex has no Claude skill host: put the reflection skill where AGENTS.md says to read it.
+if [ "$CODEX_ONLY" = true ]; then
+  mkdir -p "${HOME}/.codex/skills"
+  cp -r "${SCRIPT_DIR}/skills/project-reflection" "${HOME}/.codex/skills/"
+  info "  Installed project-reflection skill file to ~/.codex/skills/"
+  warn "  Codex reflection trigger is NOT automatic: j-stack has not verified Codex's Stop-hook format."
+  warn "  Until it has, reflection in Codex relies on the AGENTS.md instruction. See README 'Project reflection'."
+fi
 
 PROJECT_AGENTS="${PWD}/AGENTS.md"
 if [ -f "$PROJECT_AGENTS" ]; then
   if grep -q "Codex role" "$PROJECT_AGENTS"; then
-    info "  AGENTS.md already contains Codex lane configuration — skipping"
+    if grep -q "project-reflection" "$PROJECT_AGENTS"; then
+      info "  AGENTS.md already contains Codex lane configuration — skipping"
+    else
+      printf '\n%s\n' "$REFLECTION_SECTION" >> "$PROJECT_AGENTS"
+      info "  Appended reflection section to existing AGENTS.md"
+    fi
   elif grep -q "Stack ownership" "$PROJECT_AGENTS"; then
     printf '\n%s\n' "$AGENTS_CODEX_APPEND" >> "$PROJECT_AGENTS"
     info "  Appended Codex lane configuration to existing AGENTS.md"
@@ -270,28 +297,30 @@ fi
 
 if [ "$CODEX_ONLY" = false ]; then
 
-# ─── Phase 3.6: SessionStart hook ─────────────────────────────────────────────
+# ─── Phase 3.6: Claude Code hooks (SessionStart + reflection gate) ────────────
 
-info "Phase 3.6 — Installing SessionStart hook…"
+info "Phase 3.6 — Installing hooks…"
 
 SETTINGS_JSON="${HOME}/.claude/settings.json"
-HOOK_MARKER="MANDATORY j-stack"
+HOOKS_DIR="${HOME}/.claude/hooks"
+mkdir -p "$HOOKS_DIR"
+cp "${SCRIPT_DIR}/hooks/reflection-gate.py" "${HOOKS_DIR}/j-stack-reflection-gate.py"
+chmod +x "${HOOKS_DIR}/j-stack-reflection-gate.py"
 
-write_session_hook() {
-  python3 - "$SETTINGS_JSON" <<'PYEOF'
+# merge_hook EVENT MARKER COMMAND STATUS [TIMEOUT_SECONDS] — idempotent merge into settings.json.
+# Prints WROTE / ALREADY, or exits 3 on unparseable JSON.
+merge_hook() {
+  python3 - "$SETTINGS_JSON" "$@" <<'PYEOF'
 import json, os, sys
 
-path = sys.argv[1]
-marker = "MANDATORY j-stack"
-command = (
-    "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\","
-    "\"additionalContext\":\"MANDATORY j-stack: Invoke the session-start skill "
-    "immediately before any development work (coding, planning, design, or file "
-    "changes). Skip only for pure Q&A that produces no artifacts. Do not wait for "
-    "user instruction — run it now.\"}}'"
-)
-entry = {"hooks": [{"type": "command", "command": command,
-                    "statusMessage": "Loading j-stack session context..."}]}
+path, event, marker, command, status = sys.argv[1:6]
+timeout = int(sys.argv[6]) if len(sys.argv) > 6 else 0
+handler = {"type": "command", "command": command}
+if status:
+    handler["statusMessage"] = status
+if timeout:
+    handler["timeout"] = timeout
+entry = {"hooks": [handler]}
 
 data = {}
 if os.path.exists(path):
@@ -302,12 +331,11 @@ if os.path.exists(path):
         print("PARSE_ERROR")
         sys.exit(3)
 
-hooks = data.setdefault("hooks", {})
-sessions = hooks.setdefault("SessionStart", [])
-if marker in json.dumps(sessions):
+groups = data.setdefault("hooks", {}).setdefault(event, [])
+if marker in json.dumps(groups):
     print("ALREADY")
     sys.exit(0)
-sessions.append(entry)
+groups.append(entry)
 os.makedirs(os.path.dirname(path), exist_ok=True)
 with open(path, "w") as f:
     json.dump(data, f, indent=2, ensure_ascii=False)
@@ -316,22 +344,25 @@ print("WROTE")
 PYEOF
 }
 
-if grep -q "$HOOK_MARKER" "$SETTINGS_JSON" 2>/dev/null; then
-  info "  SessionStart hook already present — skipping"
-elif command -v python3 &>/dev/null; then
-  result="$(write_session_hook)"
+install_hook() {
+  local event="$1" marker="$2" command="$3" status="$4" timeout="${5:-}" result
+  if ! command -v python3 &>/dev/null; then
+    warn "  python3 not found — cannot safely merge ${SETTINGS_JSON}. Add the ${event} hook manually — see README 'Manual hook setup'."
+    return
+  fi
+  result="$(merge_hook "$event" "$marker" "$command" "$status" $timeout)" || result="PARSE_ERROR"
   case "$result" in
-    WROTE)   info "  ✓ SessionStart hook written to ${SETTINGS_JSON}" ;;
-    ALREADY) info "  SessionStart hook already present — skipping" ;;
-    *)
-      warn "  Could not auto-merge ${SETTINGS_JSON} (invalid JSON or write error)."
-      warn "  Add the SessionStart hook manually — see README 'Manual hook setup'."
-      ;;
+    WROTE)   info "  ✓ ${event} hook written to ${SETTINGS_JSON}" ;;
+    ALREADY) info "  ${event} hook (${marker}) already present — skipping" ;;
+    *)       warn "  Could not auto-merge ${SETTINGS_JSON} (invalid JSON or write error). Add the ${event} hook manually — see README 'Manual hook setup'." ;;
   esac
-else
-  warn "  python3 not found — cannot safely merge ${SETTINGS_JSON}."
-  warn "  Add the SessionStart hook manually — see README 'Manual hook setup'."
-fi
+}
+
+SESSION_CMD="echo '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"MANDATORY j-stack: Invoke the session-start skill immediately before any development work (coding, planning, design, or file changes). Skip only for pure Q&A that produces no artifacts. Do not wait for user instruction — run it now.\"}}'"
+install_hook SessionStart "MANDATORY j-stack" "$SESSION_CMD" "Loading j-stack session context..."
+install_hook Stop "j-stack-reflection-gate" "python3 ${HOOKS_DIR}/j-stack-reflection-gate.py" ""
+# SessionEnd flushes the last unrecorded metrics; its default budget is 1.5s, so ask for more.
+install_hook SessionEnd "j-stack-reflection-gate" "python3 ${HOOKS_DIR}/j-stack-reflection-gate.py" "" 30
 
 fi
 
@@ -342,7 +373,7 @@ if [ "$SKIP_VERIFY" = false ]; then
 
   all_ok=true
 
-  if grep -q "Codex role" "$PROJECT_AGENTS" 2>/dev/null; then
+  if grep -q "Codex role" "$PROJECT_AGENTS" 2>/dev/null && grep -q "project-reflection" "$PROJECT_AGENTS"; then
     info "  ✓ AGENTS.md Codex runtime config"
   else
     error "  ✗ AGENTS.md missing Codex runtime config"
@@ -351,7 +382,7 @@ if [ "$SKIP_VERIFY" = false ]; then
 
   if [ "$CODEX_ONLY" = false ]; then
     # Check all skills exist
-    ALL_SKILLS=("${GSTACK_SKILLS[@]}" poc-wiki-init handoff-snapshot second-opinion stakeholder-pack session-start prior-art-survey)
+    ALL_SKILLS=("${GSTACK_SKILLS[@]}" poc-wiki-init handoff-snapshot second-opinion stakeholder-pack session-start project-reflection prior-art-survey)
     for skill in "${ALL_SKILLS[@]}"; do
       if [ -d "${SKILLS_DIR}/${skill}" ]; then
         info "  ✓ ${skill}"
@@ -360,6 +391,12 @@ if [ "$SKIP_VERIFY" = false ]; then
         all_ok=false
       fi
     done
+
+    if [ -x "${HOOKS_DIR}/j-stack-reflection-gate.py" ] && grep -q "j-stack-reflection-gate" "$SETTINGS_JSON" 2>/dev/null; then
+      info "  ✓ reflection-gate Stop hook"
+    else
+      warn "  ✗ reflection-gate Stop hook not registered — reflection will rely on manual runs (see README 'Manual hook setup')"
+    fi
 
     # Check scout agent definitions exist
     for agent in "${PRIOR_ART_AGENTS[@]}"; do
