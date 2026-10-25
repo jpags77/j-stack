@@ -21,13 +21,13 @@ assert_not_contains() {
 }
 
 # ── Skill files must exist ───────────────────────────────────────────────────
-for skill in poc-wiki-init handoff-snapshot second-opinion stakeholder-pack session-start prior-art-survey; do
+for skill in poc-wiki-init handoff-snapshot second-opinion stakeholder-pack session-start project-reflection prior-art-survey; do
   assert_file "${ROOT}/skills/${skill}/SKILL.md"
   echo "  ✓ skills/${skill}/SKILL.md"
 done
 
 # ── Skill files must have frontmatter ───────────────────────────────────────
-for skill in poc-wiki-init handoff-snapshot second-opinion stakeholder-pack session-start; do
+for skill in poc-wiki-init handoff-snapshot second-opinion stakeholder-pack session-start project-reflection; do
   assert_contains "${ROOT}/skills/${skill}/SKILL.md" "name: ${skill}"
   echo "  ✓ skills/${skill}/SKILL.md has name: frontmatter"
 done
@@ -51,6 +51,16 @@ echo "  ✓ install.sh uses cp -r for custom skills"
 assert_not_contains "${ROOT}/install.sh" "Phase 3.5: Global CLAUDE.md"
 assert_not_contains "${ROOT}/install.sh" "GLOBAL_CLAUDE_SECTION"
 echo "  ✓ install.sh has no Phase 3.5 / GLOBAL_CLAUDE_SECTION"
+
+# ── reflection wiring: skill installed, checkpoint text single-sourced, handoff invokes it ──
+assert_contains "${ROOT}/install.sh" "project-reflection"
+assert_contains "${ROOT}/install.sh" "templates/reflection-checkpoint.md"
+assert_contains "${ROOT}/skills/handoff-snapshot/SKILL.md" "project-reflection"
+assert_contains "${ROOT}/skills/poc-wiki-init/SKILL.md" "reflection-checkpoint.md"
+diff -q "${ROOT}/templates/reflection-checkpoint.md" "${ROOT}/skills/poc-wiki-init/templates/reflection-checkpoint.md" >/dev/null \
+  || { echo "reflection-checkpoint.md copies differ" >&2; exit 1; }
+for f in CLAUDE.md AGENTS.md; do assert_contains "${ROOT}/${f}" "project-reflection"; done
+echo "  ✓ project-reflection wired (install, handoff, templates in sync)"
 
 # ── index.html must NOT load React or Babel from CDN ────────────────────────
 assert_not_contains "${ROOT}/index.html" "unpkg.com/react"

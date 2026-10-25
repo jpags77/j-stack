@@ -45,6 +45,10 @@ When usage limits hit, run `handoff-snapshot` and resume in Codex / Cursor / Cha
 
 After significant code interactions, create a durable checkpoint before switching tasks: commit the coherent git diff, update `.planning/` with notable decisions or review output, append `.planning/log.md`, and run `handoff-snapshot`. Do not push to GitHub automatically; push only when the user asks or an explicit publish workflow is active.
 
+## Reflection
+
+At the checkpoints above where something was actually learned — a substantial review finished, a hard failure resolved, or a handoff — run `project-reflection` first (Codex: read `~/.claude/skills/project-reflection/SKILL.md` or `~/.codex/skills/project-reflection/SKILL.md` and follow it). It records revisable observations in `.planning/reflections.md`, asks for no approval, and writes nothing when nothing material was learned. Its own edits never trigger another reflection. Observations are advisory: they do not change this file, other skills, or policy.
+
 ## Codex role
 
 Codex is a separate j-stack runtime, not the primary Claude skill host. It uses the same `.planning/` blackboard and phase order, but executes the workflow through Codex-native repo work instead of Claude slash commands.

@@ -98,15 +98,26 @@ The output isn't just research — it becomes the "what else did you consider" s
 
 ---
 
-### Five custom skills — what doesn't exist anywhere else
+### Six custom skills — what doesn't exist anywhere else
 
 | Skill | What it does |
 |-------|-------------|
 | `session-start` | Session orientation ritual. Run at the start of every session — reads wiki state, confirms fidelity target, surfaces scope changes, handles iteration bumps, and declares the session goal before any work begins. Prevents silent drift between sessions. |
 | `poc-wiki-init` | Bootstraps the `.planning/` wiki at project start. Asks the fidelity target question upfront, generates schema files for Claude Code, Codex, Cursor, and ChatGPT. Idempotent — safe to run again. |
 | `handoff-snapshot` | Writes a timestamped blackboard snapshot to `.planning/handoffs/` with typed state, claims, provenance, conflicts, decisions, next steps, touched artifacts, and a paste-ready continuation prompt for the next tool. |
+| `project-reflection` | Quiet reflection at existing checkpoints (substantial review done, hard failure resolved, handoff). Records revisable observations — scope, evidence, a verified-vs-unverified cause — in `.planning/reflections.md`; writes nothing when nothing material was learned; asks for no approval; never edits CLAUDE.md, AGENTS.md, or skills. Invoked by instruction (the checkpoint text in CLAUDE.md/AGENTS.md and `handoff-snapshot`), not by a hook, so it is followed, not enforced. Also supports a bounded backfill over records you name. |
 | `second-opinion` | Dispatches an artifact to Codex CLI for independent review, then synthesizes a convergence/divergence matrix. Two AI vendors reviewing the same artifact independently. |
 | `stakeholder-pack` | Aggregates vision, prior-art, security, and cross-model review outputs into a single executive-ready document. Pre-answers the five standard enterprise PoC questions. |
+
+
+### Project reflection
+
+`project-reflection` writes `.planning/reflections.md`: short, dated, revisable observations with scope, evidence, and whether the cause was verified. It runs at checkpoints that already exist (a substantial review finishes, a hard failure is resolved, `handoff-snapshot`), uses what the session already knows, asks for no approval, and does nothing when nothing material was learned. Entries are advisory; the skill never edits CLAUDE.md, AGENTS.md, or other skills.
+
+- **How it fires, and the limit:** it is an instruction, not a hook. `install.sh` adds a `## Reflection` section to the project's CLAUDE.md/AGENTS.md (new projects and existing ones, idempotent), and `handoff-snapshot` runs it first. An agent that ignores those instructions skips it; nothing enforces it.
+- **Install:** re-run `bash install.sh` in each project (Claude Code) or `bash install.sh --codex-only` (Codex; the skill file goes to `~/.codex/skills/`, which AGENTS.md points at. Codex auto-discovery of that folder is not verified).
+- **Backfill:** ask for it by naming records ("reflect on handoffs/X and the 2026-07-19 log entries"). It never scans on its own.
+- **Tests:** `bash tests/reflection-behavior.sh` (opt-in; needs the `claude` CLI, spends model calls).
 
 ---
 
@@ -284,7 +295,7 @@ bash install.sh --skip-codex    # skip Codex CLI check (if not using second-opin
 bash install.sh --skip-verify   # skip post-install verification
 ```
 
-The default script clones gstack, copies 11 cherry-picked skills into `~/.claude/skills/` with model directives injected, installs the 5 custom skills plus the bundled `prior-art-survey` (all from `skills/` files in this repo), installs the three scout agents into `~/.claude/agents/` (pinned to `model: sonnet`, honored by the Agent tool at dispatch), writes the project `CLAUDE.md` and `AGENTS.md` lane configuration, and merges a `SessionStart` hook into `~/.claude/settings.json` so `session-start` fires automatically (see [Manual hook setup](#manual-hook-setup) if you don't have `python3`).
+The default script clones gstack, copies 11 cherry-picked skills into `~/.claude/skills/` with model directives injected, installs the 6 custom skills plus the bundled `prior-art-survey` (all from `skills/` files in this repo), installs the three scout agents into `~/.claude/agents/` (pinned to `model: sonnet`, honored by the Agent tool at dispatch), writes the project `CLAUDE.md` and `AGENTS.md` lane configuration, and merges a `SessionStart` hook into `~/.claude/settings.json` so `session-start` fires automatically (see [Manual hook setup](#manual-hook-setup) if you don't have `python3`).
 
 `--codex-only` skips Claude CLI/plugin/skill/agent/hook installation. It checks for the Codex CLI, writes the project `AGENTS.md` runtime mapping, and verifies the Codex surface. Use it when the repo should be workable from Codex without installing the Claude skill host on that machine.
 

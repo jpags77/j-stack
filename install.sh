@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # j-stack install script
 # Sets up the j-stack enterprise PoC workflow:
-#   Superpowers + cherry-picked gstack skills + 5 custom skills + prior-art bundle
+#   Superpowers + cherry-picked gstack skills + 6 custom skills + prior-art bundle
 #   + Claude CLAUDE.md lane config + Codex AGENTS.md runtime config
 #   + Claude SessionStart hook
 #
@@ -174,7 +174,7 @@ done
 # ─── Phase 2: Custom skills ────────────────────────────────────────────────────────────────────────────
 
 info "Phase 2 — Installing custom skills…"
-CUSTOM_SKILLS=(poc-wiki-init handoff-snapshot second-opinion stakeholder-pack session-start)
+CUSTOM_SKILLS=(poc-wiki-init handoff-snapshot second-opinion stakeholder-pack session-start project-reflection)
 
 for skill in "${CUSTOM_SKILLS[@]}"; do
   src="${SCRIPT_DIR}/skills/${skill}"
@@ -221,12 +221,20 @@ info "Phase 3 — Configuring project CLAUDE.md…"
 
 # Sourced from templates/lane-doctrine.md — the single copy of this text.
 # Edit that file, not this script, to change the shared doctrine.
-CLAUDE_SECTION="$(cat "${SCRIPT_DIR}/templates/lane-doctrine.md")"
+REFLECTION_SECTION="$(cat "${SCRIPT_DIR}/templates/reflection-checkpoint.md")"
+CLAUDE_SECTION="$(cat "${SCRIPT_DIR}/templates/lane-doctrine.md")
+
+${REFLECTION_SECTION}"
 
 PROJECT_CLAUDE="${PWD}/CLAUDE.md"
 if [ -f "$PROJECT_CLAUDE" ]; then
   if grep -q "Stack ownership" "$PROJECT_CLAUDE"; then
-    info "  CLAUDE.md already contains stack ownership section — skipping"
+    if grep -q "project-reflection" "$PROJECT_CLAUDE"; then
+      info "  CLAUDE.md already contains stack ownership and reflection sections — skipping"
+    else
+      printf '\n%s\n' "$REFLECTION_SECTION" >> "$PROJECT_CLAUDE"
+      info "  Appended reflection section to existing CLAUDE.md"
+    fi
   else
     printf '\n# Project Context\n\n%s\n' "$CLAUDE_SECTION" >> "$PROJECT_CLAUDE"
     info "  Appended stack ownership section to existing CLAUDE.md"
@@ -247,15 +255,32 @@ info "Phase 3.25 — Configuring project AGENTS.md…"
 # Codex-specific addendum.
 LANE_DOCTRINE="$(cat "${SCRIPT_DIR}/templates/lane-doctrine.md")"
 CODEX_ROLE="$(cat "${SCRIPT_DIR}/templates/codex-role.md")"
+REFLECTION_SECTION="$(cat "${SCRIPT_DIR}/templates/reflection-checkpoint.md")"
 AGENTS_SECTION="${LANE_DOCTRINE}
 
+${REFLECTION_SECTION}
+
 ${CODEX_ROLE}"
-AGENTS_CODEX_APPEND="$CODEX_ROLE"
+AGENTS_CODEX_APPEND="${REFLECTION_SECTION}
+
+${CODEX_ROLE}"
+
+# Codex has no Claude skill host: put the reflection skill where AGENTS.md says to read it.
+if [ "$CODEX_ONLY" = true ]; then
+  mkdir -p "${HOME}/.codex/skills"
+  cp -r "${SCRIPT_DIR}/skills/project-reflection" "${HOME}/.codex/skills/"
+  info "  Installed project-reflection skill file to ~/.codex/skills/"
+fi
 
 PROJECT_AGENTS="${PWD}/AGENTS.md"
 if [ -f "$PROJECT_AGENTS" ]; then
   if grep -q "Codex role" "$PROJECT_AGENTS"; then
-    info "  AGENTS.md already contains Codex lane configuration — skipping"
+    if grep -q "project-reflection" "$PROJECT_AGENTS"; then
+      info "  AGENTS.md already contains Codex lane configuration — skipping"
+    else
+      printf '\n%s\n' "$REFLECTION_SECTION" >> "$PROJECT_AGENTS"
+      info "  Appended reflection section to existing AGENTS.md"
+    fi
   elif grep -q "Stack ownership" "$PROJECT_AGENTS"; then
     printf '\n%s\n' "$AGENTS_CODEX_APPEND" >> "$PROJECT_AGENTS"
     info "  Appended Codex lane configuration to existing AGENTS.md"
@@ -342,7 +367,7 @@ if [ "$SKIP_VERIFY" = false ]; then
 
   all_ok=true
 
-  if grep -q "Codex role" "$PROJECT_AGENTS" 2>/dev/null; then
+  if grep -q "Codex role" "$PROJECT_AGENTS" 2>/dev/null && grep -q "project-reflection" "$PROJECT_AGENTS"; then
     info "  ✓ AGENTS.md Codex runtime config"
   else
     error "  ✗ AGENTS.md missing Codex runtime config"
@@ -351,7 +376,7 @@ if [ "$SKIP_VERIFY" = false ]; then
 
   if [ "$CODEX_ONLY" = false ]; then
     # Check all skills exist
-    ALL_SKILLS=("${GSTACK_SKILLS[@]}" poc-wiki-init handoff-snapshot second-opinion stakeholder-pack session-start prior-art-survey)
+    ALL_SKILLS=("${GSTACK_SKILLS[@]}" poc-wiki-init handoff-snapshot second-opinion stakeholder-pack session-start project-reflection prior-art-survey)
     for skill in "${ALL_SKILLS[@]}"; do
       if [ -d "${SKILLS_DIR}/${skill}" ]; then
         info "  ✓ ${skill}"

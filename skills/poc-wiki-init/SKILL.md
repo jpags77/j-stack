@@ -98,7 +98,7 @@ Append-only. Format: ## [YYYY-MM-DD HH:MM] <operation> | <subject>
 ## [<current ISO timestamp>] init | wiki bootstrapped
 ```
 
-**CLAUDE.md** — schema for Claude Code. Read `templates/lane-doctrine.md` (co-located next to this SKILL.md — the same file install.sh injects into a project's root CLAUDE.md/AGENTS.md) and use its content verbatim as the `## Stack ownership` / `## Wiki` / `## Cross-tool` / `## Work checkpoints` sections, rather than retyping them. Do not paraphrase or shorten it — a second copy is exactly the drift this convention exists to avoid. Full file:
+**CLAUDE.md** — schema for Claude Code. Read `templates/lane-doctrine.md` (co-located next to this SKILL.md — the same file install.sh injects into a project's root CLAUDE.md/AGENTS.md) and use its content verbatim as the `## Stack ownership` / `## Wiki` / `## Cross-tool` / `## Work checkpoints` sections, followed by `templates/reflection-checkpoint.md` verbatim, rather than retyping them. Do not paraphrase or shorten it — a second copy is exactly the drift this convention exists to avoid. Full file:
 
 ```markdown
 # Project Context for Claude Code
@@ -112,9 +112,11 @@ This project uses a markdown wiki at .planning/ as its single source of truth.
 3. Check .planning/handoffs/ for the most recent snapshot if one exists — another tool may have left state for you.
 
 [insert templates/lane-doctrine.md verbatim here]
+
+[insert templates/reflection-checkpoint.md verbatim here]
 ```
 
-**AGENTS.md** — schema for Codex CLI. Read both `templates/lane-doctrine.md` and `templates/codex-role.md` (co-located next to this SKILL.md) and insert them verbatim in that order. Full file:
+**AGENTS.md** — schema for Codex CLI. Read `templates/lane-doctrine.md`, `templates/reflection-checkpoint.md`, and `templates/codex-role.md` (co-located next to this SKILL.md) and insert them verbatim in that order. Full file:
 
 ```markdown
 # Project Context for Codex CLI
@@ -134,6 +136,8 @@ EXPAND -> REFINE -> SURVEY -> PLAN -> BUILD -> POLISH -> DEFEND -> HANDOFF
 Respect the lane ownership from the root AGENTS.md/CLAUDE.md files. Do not skip ahead to implementation when the wiki says the project is still in an earlier phase.
 
 [insert templates/lane-doctrine.md verbatim here]
+
+[insert templates/reflection-checkpoint.md verbatim here]
 
 [insert templates/codex-role.md verbatim here]
 ```
