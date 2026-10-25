@@ -19,10 +19,6 @@ model: haiku
 
 Check `.planning/` exists. If not, run poc-wiki-init first, or report that the project isn't wiki-enabled and offer to bootstrap one.
 
-### 1.5. Reflect first
-
-Run `project-reflection` in checkpoint mode before writing the snapshot, so a new or revised `.planning/reflections.md` can be listed under `artifacts`. It is silent, needs no approval, and writes nothing if nothing material was learned. Do not reflect on the snapshot itself, and `project-reflection` never calls this skill back.
-
 ### 2. Generate blackboard snapshot
 
 Write to `.planning/handoffs/<timestamp>-snapshot.md` with this structure:
@@ -129,6 +125,9 @@ Write to `.planning/handoffs/<timestamp>-snapshot.md` with this structure:
 The JSON block is the blackboard. Keep it valid JSON, keep IDs stable within the file, and do not invent provenance. Use `needs_verification` when a claim is useful but not yet checked.
 
 ### 3. Append to log.md
+
+(Writing the snapshot is itself a checkpoint: the reflection-gate Stop hook notices the new file and asks for `project-reflection` afterwards. Do not run it from here.)
+
 
 `## [<timestamp>] handoff | <reason: usage_limits / planned_switch / pause>`
 

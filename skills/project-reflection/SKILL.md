@@ -1,6 +1,6 @@
 ---
 name: project-reflection
-description: Quiet, no-approval reflection on completed project work. Run at existing checkpoints (a substantial review finished, a hard failure resolved, a handoff) to record what the work taught as revisable observations in .planning/reflections.md. Writes nothing when nothing material was learned. Also supports a bounded, explicitly requested backfill over named existing records. Never edits CLAUDE.md, AGENTS.md, skills, or policy.
+description: Quiet, no-approval reflection on completed project work. Triggered automatically by the j-stack reflection-gate Stop hook when a review or handoff file is new or a session struggled; also usable by hand. Records what the work taught as revisable observations in .planning/reflections.md. Writes nothing when nothing material was learned. Also supports a bounded, explicitly requested backfill over named existing records. Never edits CLAUDE.md, AGENTS.md, skills, or policy.
 model: sonnet
 ---
 
@@ -10,16 +10,13 @@ Keeps interpretation ("what did this teach us, and how sure are we") in `.planni
 
 ## When to run
 
-Only at a checkpoint, and only if the work since the last checkpoint contained something worth learning:
+Normally the **reflection-gate** Stop hook starts this: it is a model-free script that notices a new or changed file in `.planning/reviews/` or `.planning/handoffs/` (or a session with many failed tool calls) and tells you to run this skill on that evidence. You can also run it by hand at a checkpoint (a substantial review finished, a hard failure resolved, a handoff), or for a **backfill** the user names (below). Where the hook is not installed, those manual checkpoints are the only trigger.
 
-- a substantial review (`/qa`, `/cso`, `/design-review`, `second-opinion`) just finished
-- a difficult failure was resolved (more than one wrong turn, or a surprising cause)
-- a handoff is being written (`handoff-snapshot` runs this first)
-- the user asks, or asks for a **backfill** of named records (see below)
+Do not run per turn or on routine work. Do not spawn another agent for it; do it inline from what the session already knows.
 
-Do not run per turn, per commit, or on routine work. Do not spawn another agent for it; do it inline from what the session already knows.
+**If nothing material was learned**, write nothing and end your reply with exactly `NO_REFLECTION_NEEDED` (the hook reads this to know you looked). Never write placeholder entries to satisfy it.
 
-**No recursion.** Edits to `reflections.md`, and the log line about them, are never evidence and never a trigger. This skill does not call `handoff-snapshot`.
+**No recursion.** Edits to `reflections.md`, and the log line about them, are never evidence and never a trigger. This skill does not write review or handoff files and does not call `handoff-snapshot`.
 
 **No approvals.** Write directly. The file is advisory, so a wrong entry is cheap to revise and a review queue is not.
 

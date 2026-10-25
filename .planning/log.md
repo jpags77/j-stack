@@ -28,3 +28,7 @@ Append-only. Format: ## [YYYY-MM-DD HH:MM] <operation> | <subject>
 ## [2026-10-25 14:45] reflection | R-stale-heading-assertion, R-pin-only-on-fresh-clone (bounded backfill over the two 2026-07-19 handoffs), R-negative-scenario-vacuous-pass
 
 ## [2026-10-25 14:55] handoff | checkpoint
+## [2026-10-25 15:40] decision | reflection trigger redesigned — standing instructions can be ignored and per-turn model hooks are too costly, so a model-free Stop hook (reflection-gate.py) now triggers deterministically on new review/handoff files or a struggling session, verifies compliance, re-prompts once, and releases. handoff-snapshot step 1.5 removed (hook covers handoffs). Codex trigger left unverified.
+## [2026-10-25 15:45] implementation | reflection-gate hook + install_hook refactor in install.sh (idempotent, preserves user hooks); tests/reflection-gate.sh (14 deterministic checks), tests/reflection-hook-e2e.sh (real headless Stop hook: control silent, review file -> injected -> agent invoked Skill -> NO_REFLECTION_NEEDED, no refire)
+
+## [2026-10-25 16:00] handoff | checkpoint

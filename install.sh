@@ -270,6 +270,8 @@ if [ "$CODEX_ONLY" = true ]; then
   mkdir -p "${HOME}/.codex/skills"
   cp -r "${SCRIPT_DIR}/skills/project-reflection" "${HOME}/.codex/skills/"
   info "  Installed project-reflection skill file to ~/.codex/skills/"
+  warn "  Codex reflection trigger is NOT automatic: j-stack has not verified Codex's Stop-hook format."
+  warn "  Until it has, reflection in Codex relies on the AGENTS.md instruction. See README 'Project reflection'."
 fi
 
 PROJECT_AGENTS="${PWD}/AGENTS.md"
@@ -295,28 +297,27 @@ fi
 
 if [ "$CODEX_ONLY" = false ]; then
 
-# ─── Phase 3.6: SessionStart hook ─────────────────────────────────────────────
+# ─── Phase 3.6: Claude Code hooks (SessionStart + reflection gate) ────────────
 
-info "Phase 3.6 — Installing SessionStart hook…"
+info "Phase 3.6 — Installing hooks…"
 
 SETTINGS_JSON="${HOME}/.claude/settings.json"
-HOOK_MARKER="MANDATORY j-stack"
+HOOKS_DIR="${HOME}/.claude/hooks"
+mkdir -p "$HOOKS_DIR"
+cp "${SCRIPT_DIR}/hooks/reflection-gate.py" "${HOOKS_DIR}/j-stack-reflection-gate.py"
+chmod +x "${HOOKS_DIR}/j-stack-reflection-gate.py"
 
-write_session_hook() {
-  python3 - "$SETTINGS_JSON" <<'PYEOF'
+# merge_hook EVENT MARKER COMMAND STATUS — idempotent merge into settings.json.
+# Prints WROTE / ALREADY, or exits 3 on unparseable JSON.
+merge_hook() {
+  python3 - "$SETTINGS_JSON" "$@" <<'PYEOF'
 import json, os, sys
 
-path = sys.argv[1]
-marker = "MANDATORY j-stack"
-command = (
-    "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\","
-    "\"additionalContext\":\"MANDATORY j-stack: Invoke the session-start skill "
-    "immediately before any development work (coding, planning, design, or file "
-    "changes). Skip only for pure Q&A that produces no artifacts. Do not wait for "
-    "user instruction — run it now.\"}}'"
-)
-entry = {"hooks": [{"type": "command", "command": command,
-                    "statusMessage": "Loading j-stack session context..."}]}
+path, event, marker, command, status = sys.argv[1:6]
+handler = {"type": "command", "command": command}
+if status:
+    handler["statusMessage"] = status
+entry = {"hooks": [handler]}
 
 data = {}
 if os.path.exists(path):
@@ -327,12 +328,11 @@ if os.path.exists(path):
         print("PARSE_ERROR")
         sys.exit(3)
 
-hooks = data.setdefault("hooks", {})
-sessions = hooks.setdefault("SessionStart", [])
-if marker in json.dumps(sessions):
+groups = data.setdefault("hooks", {}).setdefault(event, [])
+if marker in json.dumps(groups):
     print("ALREADY")
     sys.exit(0)
-sessions.append(entry)
+groups.append(entry)
 os.makedirs(os.path.dirname(path), exist_ok=True)
 with open(path, "w") as f:
     json.dump(data, f, indent=2, ensure_ascii=False)
@@ -341,22 +341,23 @@ print("WROTE")
 PYEOF
 }
 
-if grep -q "$HOOK_MARKER" "$SETTINGS_JSON" 2>/dev/null; then
-  info "  SessionStart hook already present — skipping"
-elif command -v python3 &>/dev/null; then
-  result="$(write_session_hook)"
+install_hook() {
+  local event="$1" marker="$2" command="$3" status="$4" result
+  if ! command -v python3 &>/dev/null; then
+    warn "  python3 not found — cannot safely merge ${SETTINGS_JSON}. Add the ${event} hook manually — see README 'Manual hook setup'."
+    return
+  fi
+  result="$(merge_hook "$event" "$marker" "$command" "$status")" || result="PARSE_ERROR"
   case "$result" in
-    WROTE)   info "  ✓ SessionStart hook written to ${SETTINGS_JSON}" ;;
-    ALREADY) info "  SessionStart hook already present — skipping" ;;
-    *)
-      warn "  Could not auto-merge ${SETTINGS_JSON} (invalid JSON or write error)."
-      warn "  Add the SessionStart hook manually — see README 'Manual hook setup'."
-      ;;
+    WROTE)   info "  ✓ ${event} hook written to ${SETTINGS_JSON}" ;;
+    ALREADY) info "  ${event} hook (${marker}) already present — skipping" ;;
+    *)       warn "  Could not auto-merge ${SETTINGS_JSON} (invalid JSON or write error). Add the ${event} hook manually — see README 'Manual hook setup'." ;;
   esac
-else
-  warn "  python3 not found — cannot safely merge ${SETTINGS_JSON}."
-  warn "  Add the SessionStart hook manually — see README 'Manual hook setup'."
-fi
+}
+
+SESSION_CMD="echo '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"MANDATORY j-stack: Invoke the session-start skill immediately before any development work (coding, planning, design, or file changes). Skip only for pure Q&A that produces no artifacts. Do not wait for user instruction — run it now.\"}}'"
+install_hook SessionStart "MANDATORY j-stack" "$SESSION_CMD" "Loading j-stack session context..."
+install_hook Stop "j-stack-reflection-gate" "python3 ${HOOKS_DIR}/j-stack-reflection-gate.py" ""
 
 fi
 
@@ -385,6 +386,12 @@ if [ "$SKIP_VERIFY" = false ]; then
         all_ok=false
       fi
     done
+
+    if [ -x "${HOOKS_DIR}/j-stack-reflection-gate.py" ] && grep -q "j-stack-reflection-gate" "$SETTINGS_JSON" 2>/dev/null; then
+      info "  ✓ reflection-gate Stop hook"
+    else
+      warn "  ✗ reflection-gate Stop hook not registered — reflection will rely on manual runs (see README 'Manual hook setup')"
+    fi
 
     # Check scout agent definitions exist
     for agent in "${PRIOR_ART_AGENTS[@]}"; do

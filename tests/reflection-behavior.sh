@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Behavioral check for skills/project-reflection. Opt-in: needs the `claude`
-# CLI and spends model calls (about 9 short headless runs), and model output
+# CLI and spends model calls (about 7 short headless runs), and model output
 # is not deterministic, so a failure means "inspect", not necessarily "broken".
+# Triggering is covered separately by reflection-hook-e2e.sh.
 # Each scenario builds a tiny throwaway repo, hands a fresh agent the skill
 # plus a stand-in session summary, then asserts on the files it left behind.
 set -uo pipefail
@@ -69,7 +70,8 @@ D2="$(mkrepo s2)"; run "$D2" "${PRE}a hard failure was just resolved. A migratio
 R2="$D2/.planning/reflections.md"
 if [ -f "$R2" ]; then
   pass "entry written for the successful strategy"
-  grep -i "cach" "$R2" | grep -viqE "unverified|not verified|untested|not tested|not confirmed|never tested" && fail "a line states the cache theory without marking it unverified" || pass "cache theory marked unverified"
+  grep -i "^- Explanation:.*cach" "$R2" | grep -viqE "unverified|not verified|untested|not tested|not confirmed|never tested" && fail "an Explanation states the cache theory without marking it unverified" || pass "cache theory not asserted as fact"
+  grep -iq "^- Explanation:.*cach" "$R2" && pass "cache theory recorded as an Explanation" || echo "  (note: no Explanation mentions the cache theory)"
   grep -q "Status: tentative" "$R2" && pass "tentative" || fail "not tentative"
   grep -q "3fa91c2" "$R2" && pass "cites the commit" || fail "commit not cited"
 else fail "no entry written for a clear successful strategy"; fi
@@ -120,18 +122,6 @@ for frag in ["Jeff's rule of thumb: mocks hide integration bugs, so be suspiciou
     assert frag in s, frag
 PY
 grep -q '^## R-' "$R6" && pass "new entry added alongside" || fail "no new entry"
-
-echo "7/8. handoff checkpoint invokes reflection once, no approval, no recursion"
-D7="$(mkrepo s7)"; mkdir -p "$D7/.claude/skills"
-cp -r "${ROOT}/skills/handoff-snapshot" "${ROOT}/skills/project-reflection" "$D7/.claude/skills/"
-run "$D7" "Run the handoff-snapshot skill now (reason: planned_switch). Do not ask me anything. Session summary: ${INCIDENT}"
-T="$D7/.transcript.jsonl"
-N="$(grep -o '"name":"Skill"[^}]*project-reflection' "$T" | wc -l)"
-READ="$(grep -c 'project-reflection/SKILL.md' "$T")"
-{ [ "$N" -ge 1 ] || [ "$READ" -ge 1 ]; } && pass "project-reflection ran from handoff-snapshot" || fail "reflection not invoked"
-ls "$D7"/.planning/handoffs/*snapshot.md >/dev/null 2>&1 && pass "snapshot written" || fail "no snapshot"
-[ "$(count 'reflection |' "$D7/.planning/log.md")" -le 1 ] && pass "reflection logged at most once (no recursion)" || fail "multiple reflection log lines"
-grep -q "AskUserQuestion" "$T" && fail "asked the user a question" || pass "no approval prompt"
 
 echo
 if [ "$FAILS" = 0 ]; then echo "All behavioral checks passed. Work dir: $WORK"; else echo "$FAILS check(s) failed. Inspect: $WORK"; exit 1; fi

@@ -112,12 +112,16 @@ The output isn't just research — it becomes the "what else did you consider" s
 
 ### Project reflection
 
-`project-reflection` writes `.planning/reflections.md`: short, dated, revisable observations with scope, evidence, and whether the cause was verified. It runs at checkpoints that already exist (a substantial review finishes, a hard failure is resolved, `handoff-snapshot`), uses what the session already knows, asks for no approval, and does nothing when nothing material was learned. Entries are advisory; the skill never edits CLAUDE.md, AGENTS.md, or other skills.
+`project-reflection` writes `.planning/reflections.md`: short, dated, revisable observations with scope, evidence, and whether the cause was verified. Entries are advisory; nothing is promoted into CLAUDE.md, AGENTS.md, or other skills.
 
-- **How it fires, and the limit:** it is an instruction, not a hook. `install.sh` adds a `## Reflection` section to the project's CLAUDE.md/AGENTS.md (new projects and existing ones, idempotent), and `handoff-snapshot` runs it first. An agent that ignores those instructions skips it; nothing enforces it.
-- **Install:** re-run `bash install.sh` in each project (Claude Code) or `bash install.sh --codex-only` (Codex; the skill file goes to `~/.codex/skills/`, which AGENTS.md points at. Codex auto-discovery of that folder is not verified).
+**What triggers it (deterministic, not a standing instruction):** a `Stop` hook runs `reflection-gate.py` after every turn. The script uses no model and takes milliseconds. It stays silent unless something checkpoint-like happened since it last looked: a new or changed file in `.planning/reviews/` or `.planning/handoffs/` (so `/qa`, `/cso`, `second-opinion`, and `handoff-snapshot` all count), or a session with six or more failed tool calls (a rough proxy for a hard failure). When it fires, it blocks the stop once and gives Claude the instruction to run the skill on that evidence. It then checks the result: `reflections.md` changed, or Claude replied `NO_REFLECTION_NEEDED`. If neither, it re-prompts once, then records a miss in `~/.j-stack/reflection-state/` and lets go. It cannot loop, and edits to `reflections.md` or the log never count as evidence.
+
+**What this guarantees and what it doesn't.** The trigger and the follow-up check are deterministic. The judgement, whether anything is worth recording, is the model's, and often the right answer is nothing. A review that is never filed under `.planning/reviews/` is invisible to the gate (the existing POLISH filing rule still depends on the model). The first run in a project only records a baseline, so old history is never ingested automatically.
+
+- **Install:** `bash install.sh` copies the hook to `~/.claude/hooks/` and merges it into `~/.claude/settings.json` (your other hooks are untouched). Run it once; every project with a `.planning/` folder is covered, and projects without one are ignored. Existing projects also get the short `## Reflection` section in CLAUDE.md/AGENTS.md.
+- **Codex:** the skill file is installed to `~/.codex/skills/` and AGENTS.md points at it, but the automatic trigger is **not verified for Codex** (its hook docs were unreachable when this was built). Until someone tests Codex's `Stop` hook with this script, Codex reflection depends on the AGENTS.md instruction.
 - **Backfill:** ask for it by naming records ("reflect on handoffs/X and the 2026-07-19 log entries"). It never scans on its own.
-- **Tests:** `bash tests/reflection-behavior.sh` (opt-in; needs the `claude` CLI, spends model calls).
+- **Tests:** `tests/reflection-gate.sh` (deterministic, free); opt-in model-backed `tests/reflection-behavior.sh` and `tests/reflection-hook-e2e.sh` (need the `claude` CLI).
 
 ---
 
@@ -295,7 +299,7 @@ bash install.sh --skip-codex    # skip Codex CLI check (if not using second-opin
 bash install.sh --skip-verify   # skip post-install verification
 ```
 
-The default script clones gstack, copies 11 cherry-picked skills into `~/.claude/skills/` with model directives injected, installs the 6 custom skills plus the bundled `prior-art-survey` (all from `skills/` files in this repo), installs the three scout agents into `~/.claude/agents/` (pinned to `model: sonnet`, honored by the Agent tool at dispatch), writes the project `CLAUDE.md` and `AGENTS.md` lane configuration, and merges a `SessionStart` hook into `~/.claude/settings.json` so `session-start` fires automatically (see [Manual hook setup](#manual-hook-setup) if you don't have `python3`).
+The default script clones gstack, copies 11 cherry-picked skills into `~/.claude/skills/` with model directives injected, installs the 6 custom skills plus the bundled `prior-art-survey` (all from `skills/` files in this repo), installs the three scout agents into `~/.claude/agents/` (pinned to `model: sonnet`, honored by the Agent tool at dispatch), writes the project `CLAUDE.md` and `AGENTS.md` lane configuration, and merges a `SessionStart` hook and a `Stop` reflection-gate hook into `~/.claude/settings.json` so `session-start` and checkpoint reflection fire automatically (see [Manual hook setup](#manual-hook-setup) if you don't have `python3`).
 
 `--codex-only` skips Claude CLI/plugin/skill/agent/hook installation. It checks for the Codex CLI, writes the project `AGENTS.md` runtime mapping, and verifies the Codex surface. Use it when the repo should be workable from Codex without installing the Claude skill host on that machine.
 
@@ -319,6 +323,12 @@ The default script clones gstack, copies 11 cherry-picked skills into `~/.claude
     ]
   }
 }
+```
+
+The reflection gate is a second hook, on `Stop`. Copy `hooks/reflection-gate.py` to `~/.claude/hooks/j-stack-reflection-gate.py` and merge:
+
+```json
+{ "hooks": { "Stop": [ { "hooks": [ { "type": "command", "command": "python3 ~/.claude/hooks/j-stack-reflection-gate.py" } ] } ] } }
 ```
 
 Without the hook, j-stack still works — the global `~/.claude/CLAUDE.md` instructs Claude to run `session-start` at the top of every session — but the hook makes it deterministic rather than relying on the model honoring the instruction.

@@ -15,3 +15,7 @@ Date: 2026-10-25. Spec: task brief "Build a project reflection skill into j-stac
 ## Decision: BUILD (thin)
 
 Adopted ideas, not code: capture at checkpoints, separate evidence from interpretation, dedupe, dated revisions. The existing tools route learnings through an approval step or into CLAUDE.md-style instructions, which the brief rules out, and none targets a `.planning/` wiki shared by Claude Code and Codex. One ~80-line skill plus a 3-line checkpoint section reuses j-stack's existing plumbing (handoff-snapshot, templates, installer). No new service, hook, database, or agent.
+
+## Addendum 2026-10-25: trigger mechanism
+
+Standing instructions (CLAUDE.md text, "run X first" inside another skill) are advisory to the model and can be skipped. Per-turn model-driven hooks (`prompt`/`agent` hook types) pay a model call every turn. Chosen: a plain `command` `Stop` hook that is model-free, gates on filesystem evidence, and uses Claude Code's documented block-with-reason to deliver the instruction. Verified empirically in headless Claude Code (see tests/reflection-hook-e2e.sh). Codex also documents Stop hooks, but the docs host was unreachable here, so that path is unverified.

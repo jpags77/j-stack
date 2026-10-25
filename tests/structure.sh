@@ -55,12 +55,14 @@ echo "  ✓ install.sh has no Phase 3.5 / GLOBAL_CLAUDE_SECTION"
 # ── reflection wiring: skill installed, checkpoint text single-sourced, handoff invokes it ──
 assert_contains "${ROOT}/install.sh" "project-reflection"
 assert_contains "${ROOT}/install.sh" "templates/reflection-checkpoint.md"
-assert_contains "${ROOT}/skills/handoff-snapshot/SKILL.md" "project-reflection"
+assert_file "${ROOT}/hooks/reflection-gate.py"
+assert_contains "${ROOT}/install.sh" "j-stack-reflection-gate"
+assert_contains "${ROOT}/install.sh" "install_hook Stop"
 assert_contains "${ROOT}/skills/poc-wiki-init/SKILL.md" "reflection-checkpoint.md"
 diff -q "${ROOT}/templates/reflection-checkpoint.md" "${ROOT}/skills/poc-wiki-init/templates/reflection-checkpoint.md" >/dev/null \
   || { echo "reflection-checkpoint.md copies differ" >&2; exit 1; }
 for f in CLAUDE.md AGENTS.md; do assert_contains "${ROOT}/${f}" "project-reflection"; done
-echo "  ✓ project-reflection wired (install, handoff, templates in sync)"
+echo "  ✓ project-reflection wired (install, Stop hook, templates in sync)"
 
 # ── index.html must NOT load React or Babel from CDN ────────────────────────
 assert_not_contains "${ROOT}/index.html" "unpkg.com/react"
