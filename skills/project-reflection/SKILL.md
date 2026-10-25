@@ -67,7 +67,7 @@ Free-form text is allowed anywhere. Entries this skill writes look like this, so
   - 2026-11-02 retracted: <counterevidence>, see <ref>
 ```
 
-`R-` ids are stable; never renumber or reuse one.
+`R-` ids are stable; never renumber or reuse one. Full field rules, status lifecycle, and the `metrics.jsonl` record layout are in `SCHEMA.md` next to this file.
 
 ## Backfill
 
