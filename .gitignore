@@ -2,3 +2,5 @@
 *.bak
 .codex/
 graphify-out/
+__pycache__/
+*.pyc
