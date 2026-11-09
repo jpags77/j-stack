@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://j-stack.invalid/evals/run.schema.json",
+  "title": "J-Stack evaluation run record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id", "case_id", "variant", "runtime", "runtime_version", "model",
+    "effort", "parent_run_id", "usage_scope", "input_tokens",
+    "cached_input_tokens", "output_tokens", "reasoning_tokens",
+    "reasoning_included_in_output", "wall_seconds", "retries",
+    "unnecessary_questions", "acceptance_passed", "unsupported_done_claims",
+    "recovery_steps", "source", "completeness"
+  ],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1},
+    "case_id": {"type": "string", "minLength": 1},
+    "variant": {"type": "string", "minLength": 1},
+    "runtime": {"type": "string", "minLength": 1},
+    "runtime_version": {"type": "string", "minLength": 1},
+    "model": {"type": "string", "minLength": 1},
+    "effort": {"type": "string", "minLength": 1},
+    "parent_run_id": {"type": ["string", "null"]},
+    "usage_scope": {"enum": ["own", "aggregate"]},
+    "input_tokens": {"type": ["integer", "null"], "minimum": 0},
+    "cached_input_tokens": {"type": ["integer", "null"], "minimum": 0},
+    "output_tokens": {"type": ["integer", "null"], "minimum": 0},
+    "reasoning_tokens": {"type": ["integer", "null"], "minimum": 0},
+    "reasoning_included_in_output": {"type": ["boolean", "null"]},
+    "wall_seconds": {"type": ["number", "null"], "minimum": 0},
+    "retries": {"type": ["integer", "null"], "minimum": 0},
+    "unnecessary_questions": {"type": ["integer", "null"], "minimum": 0},
+    "acceptance_passed": {"type": ["boolean", "null"]},
+    "unsupported_done_claims": {"type": ["integer", "null"], "minimum": 0},
+    "recovery_steps": {"type": ["integer", "null"], "minimum": 0},
+    "source": {"type": "string", "minLength": 1},
+    "completeness": {"enum": ["complete", "partial", "unknown"]}
+  },
+  "$comment": "Reasoning token inclusion is explicit. cached_input_tokens is a subset of input_tokens where native source semantics define it. JSONL contains one object per line."
+}
