@@ -21,21 +21,21 @@ assert_not_contains() {
 }
 
 # ── Skill files must exist ───────────────────────────────────────────────────
-for skill in poc-wiki-init handoff-snapshot second-opinion stakeholder-pack session-start project-reflection prior-art-survey; do
+for skill in poc-wiki-init handoff-snapshot second-opinion stakeholder-pack build-mode project-reflection prior-art-survey; do
   assert_file "${ROOT}/skills/${skill}/SKILL.md"
   echo "  ✓ skills/${skill}/SKILL.md"
 done
 
 # ── Skill files must have frontmatter ───────────────────────────────────────
-for skill in poc-wiki-init handoff-snapshot second-opinion stakeholder-pack session-start project-reflection; do
+for skill in poc-wiki-init handoff-snapshot second-opinion stakeholder-pack build-mode project-reflection; do
   assert_contains "${ROOT}/skills/${skill}/SKILL.md" "name: ${skill}"
   echo "  ✓ skills/${skill}/SKILL.md has name: frontmatter"
 done
 
-# ── session-start must have Iteration Progress reconciliation (live version) ─
-assert_contains "${ROOT}/skills/session-start/SKILL.md" "Iteration Progress"
-assert_contains "${ROOT}/skills/session-start/SKILL.md" "[auto]"
-echo "  ✓ skills/session-start/SKILL.md is current version (has Iteration Progress)"
+# ── build-mode must have Iteration Progress reconciliation (live version) ─
+assert_contains "${ROOT}/skills/build-mode/SKILL.md" "Iteration Progress"
+assert_contains "${ROOT}/skills/build-mode/SKILL.md" "[auto]"
+echo "  ✓ skills/build-mode/SKILL.md is current version (has Iteration Progress)"
 
 # ── install.sh must NOT contain embedded skill heredocs ─────────────────────
 assert_not_contains "${ROOT}/install.sh" "install_skill \"poc-wiki-init\""
@@ -56,6 +56,9 @@ echo "  ✓ install.sh has no Phase 3.5 / GLOBAL_CLAUDE_SECTION"
 assert_contains "${ROOT}/install.sh" "project-reflection"
 assert_contains "${ROOT}/install.sh" "templates/reflection-checkpoint.md"
 assert_file "${ROOT}/hooks/reflection-gate.py"
+assert_file "${ROOT}/hooks/build-mode-gate.sh"
+assert_contains "${ROOT}/install.sh" 'retire_hook SessionStart "MANDATORY j-stack"'
+assert_file "${ROOT}/skills/codex/project-reflection/SKILL.md"
 assert_file "${ROOT}/skills/project-reflection/SCHEMA.md"
 assert_contains "${ROOT}/install.sh" "j-stack-reflection-gate"
 assert_contains "${ROOT}/install.sh" "install_hook Stop"
